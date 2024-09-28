@@ -2,11 +2,14 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/swagger"
 	_ "github.com/lib/pq"
+	_ "github.com/malytinKonstantin/go-fiber/docs"
 	"github.com/spf13/viper"
 )
 
@@ -24,8 +27,12 @@ func main() {
 		log.Fatalf("Failed to initialize app: %v", err)
 	}
 
-	fiberApp := fiber.New()
+	fiberApp := fiber.New(fiber.Config{
+		JSONDecoder: json.Unmarshal,
+	})
 	app.SetupRoutes(fiberApp)
+
+	fiberApp.Get("/swagger/*", swagger.HandlerDefault)
 
 	log.Fatal(fiberApp.Listen(fmt.Sprintf(":%s", port)))
 }

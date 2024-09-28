@@ -14,6 +14,7 @@ import (
 
 import (
 	_ "github.com/lib/pq"
+	_ "github.com/malytinKonstantin/go-fiber/docs"
 )
 
 // Injectors from wire.go:
