@@ -1,22 +1,28 @@
-package controllers
+package user
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/malytinKonstantin/sqlc-test/internal/services"
 
 	"strconv"
 )
 
-type UserController struct {
-	service *services.UserService
+func SetupRoutes(app *fiber.App, controller *UserController) {
+	app.Get("/users", controller.ListUsers)
+	app.Get("/users/:id", controller.GetUser)
+	app.Post("/users", controller.CreateUser)
+	app.Delete("/users/:id", controller.DeleteUser)
 }
 
-func NewUserController(service *services.UserService) *UserController {
+type UserController struct {
+	service *UserService
+}
+
+func NewUserController(service *UserService) *UserController {
 	return &UserController{service: service}
 }
 
 func (c *UserController) GetUser(ctx *fiber.Ctx) error {
-	id, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
+	id, err := strconv.ParseInt(ctx.Params("id"), 10, 32)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid ID"})
 	}
@@ -57,7 +63,7 @@ func (c *UserController) CreateUser(ctx *fiber.Ctx) error {
 }
 
 func (c *UserController) DeleteUser(ctx *fiber.Ctx) error {
-	id, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
+	id, err := strconv.ParseInt(ctx.Params("id"), 10, 32)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid ID"})
 	}

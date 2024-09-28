@@ -6,9 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	_ "github.com/lib/pq"
-	"github.com/malytinKonstantin/sqlc-test/internal/controllers"
-	"github.com/malytinKonstantin/sqlc-test/internal/repositories"
-	"github.com/malytinKonstantin/sqlc-test/internal/services"
+	"github.com/malytinKonstantin/go-fiber/internal/app"
 )
 
 func main() {
@@ -18,20 +16,15 @@ func main() {
 	}
 	defer db.Close()
 
-	// Инициализация репозитория, сервиса и контроллера
-	userRepo := repositories.NewUserRepository(db)
-	userService := services.NewUserService(userRepo)
-	userController := controllers.NewUserController(userService)
+	// Инициализация приложения
+	application := app.NewApp(db)
 
 	// Создание Fiber приложения
-	app := fiber.New()
+	fiberApp := fiber.New()
 
-	// Определение маршрутов
-	app.Get("/users", userController.ListUsers)
-	app.Get("/users/:id", userController.GetUser)
-	app.Post("/users", userController.CreateUser)
-	app.Delete("/users/:id", userController.DeleteUser)
+	// Настройка маршрутов
+	application.SetupRoutes(fiberApp)
 
 	// Запуск сервера
-	log.Fatal(app.Listen(":3000"))
+	log.Fatal(fiberApp.Listen(":3000"))
 }

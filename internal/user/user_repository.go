@@ -1,11 +1,10 @@
-package repositories
+package user
 
 import (
 	"context"
 	"database/sql"
 
-	"github.com/malytinKonstantin/sqlc-test/internal/db"
-	"github.com/malytinKonstantin/sqlc-test/internal/models"
+	"github.com/malytinKonstantin/go-fiber/internal/db"
 )
 
 type UserRepository struct {
@@ -18,26 +17,26 @@ func NewUserRepository(dbConn *sql.DB) *UserRepository {
 	}
 }
 
-func (r *UserRepository) GetUser(ctx context.Context, id int32) (models.User, error) {
+func (r *UserRepository) GetUser(ctx context.Context, id int32) (User, error) {
 	user, err := r.q.GetUser(ctx, id)
 	if err != nil {
-		return models.User{}, err
+		return User{}, err
 	}
-	return models.User{
+	return User{
 		ID:    user.ID,
 		Name:  user.Name,
 		Email: user.Email,
 	}, nil
 }
 
-func (r *UserRepository) ListUsers(ctx context.Context) ([]models.User, error) {
+func (r *UserRepository) ListUsers(ctx context.Context) ([]User, error) {
 	dbUsers, err := r.q.ListUsers(ctx)
 	if err != nil {
 		return nil, err
 	}
-	users := make([]models.User, len(dbUsers))
+	users := make([]User, len(dbUsers))
 	for i, u := range dbUsers {
-		users[i] = models.User{
+		users[i] = User{
 			ID:    u.ID,
 			Name:  u.Name,
 			Email: u.Email,
@@ -46,15 +45,15 @@ func (r *UserRepository) ListUsers(ctx context.Context) ([]models.User, error) {
 	return users, nil
 }
 
-func (r *UserRepository) CreateUser(ctx context.Context, name, email string) (models.User, error) {
+func (r *UserRepository) CreateUser(ctx context.Context, name, email string) (User, error) {
 	user, err := r.q.CreateUser(ctx, db.CreateUserParams{
 		Name:  name,
 		Email: email,
 	})
 	if err != nil {
-		return models.User{}, err
+		return User{}, err
 	}
-	return models.User{
+	return User{
 		ID:    user.ID,
 		Name:  user.Name,
 		Email: user.Email,
