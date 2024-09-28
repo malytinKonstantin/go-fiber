@@ -15,12 +15,13 @@ GORUN=$(GOCMD) run
 GOLINT=golangci-lint
 GOIMPORTS=goimports
 WIRE=$(HOME)/go/bin/wire
+SWAG=$(HOME)/go/bin/swag
 
-.PHONY: all build clean test coverage run lint fmt mod-tidy wire help
+.PHONY: all build clean test coverage run lint fmt mod-tidy wire swagger help
 
-all: mod-tidy wire lint test build
+all: mod-tidy wire swagger lint test build
 
-build: wire
+build: wire swagger
 	$(GOBUILD) -o $(BINARY_NAME) $(MAIN_PACKAGE)
 
 clean:
@@ -34,7 +35,7 @@ coverage:
 	$(GOTEST) -coverprofile=coverage.out ./...
 	$(GOCMD) tool cover -html=coverage.out
 
-run: wire
+run: wire swagger
 	$(GORUN) $(MAIN_PACKAGE)
 
 lint:
@@ -49,16 +50,20 @@ mod-tidy:
 wire:
 	$(WIRE)
 
+swagger:
+	$(SWAG) init
+
 help:
 	@echo "Доступные команды:"
-	@echo "  make build      - Собрать приложение (включая wire)"
+	@echo "  make build      - Собрать приложение (включая wire и swagger)"
 	@echo "  make clean      - Очистить артефакты сборки"
 	@echo "  make test       - Запустить тесты"
 	@echo "  make coverage   - Запустить тесты с покрытием"
-	@echo "  make run        - Запустить приложение (включая wire)"
+	@echo "  make run        - Запустить приложение (включая wire и swagger)"
 	@echo "  make lint       - Запустить линтер"
 	@echo "  make fmt        - Отформатировать код"
 	@echo "  make mod-tidy   - Обновить зависимости"
 	@echo "  make wire       - Сгенерировать код с помощью Wire"
-	@echo "  make all        - Выполнить mod-tidy, wire, lint, test и build"
+	@echo "  make swagger    - Сгенерировать документацию Swagger"
+	@echo "  make all        - Выполнить mod-tidy, wire, swagger, lint, test и build"
 	@echo "  make help       - Показать эту справку"
