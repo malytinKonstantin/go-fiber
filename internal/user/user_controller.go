@@ -24,13 +24,15 @@ func NewUserController(service *UserService) *UserController {
 // @Description Set up routes for user-related operations
 // @Tags users
 func (c *UserController) SetupRoutes(router fiber.Router) {
+	router.Post("/signin", middleware.SkipAuth(c.SignIn))
+	middleware.RegisterDTO("/api/v1/signin", "POST", SignInInput{})
+	router.Post("/signup", middleware.SkipAuth(c.CreateUser))
+
 	router.Get("/users", c.ListUsers)
 	router.Get("/users/:id", c.GetUser)
 	router.Get("/users/username/:username", c.GetUserByUsername)
-
 	middleware.RegisterDTO("/api/v1/users", "POST", CreateUserParams{})
 	router.Post("/users", c.CreateUser)
-
 	router.Put("/users/:id", c.UpdateUser)
 	router.Delete("/users/:id", c.DeleteUser)
 }
@@ -188,4 +190,46 @@ func (c *UserController) DeleteUser(ctx *fiber.Ctx) error {
 	}
 
 	return ctx.SendStatus(fiber.StatusNoContent)
+}
+
+// SignIn handles user authentication and returns a JWT token
+// @Summary User sign in
+// @Description Authenticate a user and return a JWT token
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param credentials body SignInInput true "User credentials"
+// @Success 200 {object} SignInOutput
+// @Failure 400 {object} FiberMap
+// @Failure 401 {object} FiberMap
+// @Router /api/v1/signin [post]
+func (c *UserController) SignIn(ctx *fiber.Ctx) error {
+	dtoInterface := ctx.Locals("dto")
+	if dtoInterface == nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid input: DTO is nil"})
+	}
+
+	dto, ok := dtoInterface.(*SignInInput)
+	if !ok {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Internal server error: invalid DTO type"})
+	}
+
+	token, err := c.service.Authenticate(ctx.Context(), dto.Username, dto.Password)
+	if err != nil {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return ctx.JSON(SignInOutput{Token: token})
+}
+
+// SignOut handles user sign out (in this case, it's a client-side operation)
+// @Summary User sign out
+// @Description Sign out a user (client-side operation)
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Success 200 {object} FiberMap
+// @Router /api/v1/signout [post]
+func (c *UserController) SignOut(ctx *fiber.Ctx) error {
+	return ctx.JSON(fiber.Map{"message": "Successfully signed out"})
 }

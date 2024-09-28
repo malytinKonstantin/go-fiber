@@ -39,12 +39,8 @@ func ValidateDTO() fiber.Handler {
 		fullPath := c.Path()
 		method := c.Method()
 
-		fmt.Printf("ValidateDTO: FullPath=%s, Method=%s\n", fullPath, method)
-		fmt.Printf("DTORegistry: %+v\n", DTORegistry)
-
 		dtoType, ok := DTORegistry[fullPath][method]
 		if !ok {
-			fmt.Printf("No DTO registered for path=%s, method=%s\n", fullPath, method)
 			return c.Next()
 		}
 
@@ -72,8 +68,6 @@ func ValidateDTO() fiber.Handler {
 		}
 
 		c.Locals("dto", dtoValue)
-		fmt.Printf("DTO set in context: %+v\n", dtoValue)
-
 		return c.Next()
 	}
 }

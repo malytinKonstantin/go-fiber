@@ -34,6 +34,7 @@ func main() {
 	})
 	api := fiberApp.Group(apiPrefix)
 	api.Use(middleware.ValidateDTO())
+	api.Use(middleware.AuthMiddleware())
 	app.SetupRoutes(api)
 
 	fiberApp.Get("/swagger/*", swagger.HandlerDefault)

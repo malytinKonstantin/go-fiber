@@ -11,3 +11,12 @@ type CreateUserParams struct {
 	FullName shared.NullString `json:"full_name" validate:"omitempty,max=100"`
 	Bio      shared.NullString `json:"bio" validate:"omitempty,max=500"`
 }
+
+type SignInInput struct {
+	Username string `json:"username" validate:"required"`
+	Password string `json:"password" validate:"required"`
+}
+
+type SignInOutput struct {
+	Token string `json:"token"`
+}

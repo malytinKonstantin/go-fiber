@@ -3,7 +3,9 @@ package user
 import (
 	"context"
 	"database/sql"
+	"errors"
 
+	"github.com/malytinKonstantin/go-fiber/internal/auth"
 	"github.com/malytinKonstantin/go-fiber/internal/db"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -59,4 +61,26 @@ func HashPassword(password string) (string, error) {
 func CheckPasswordHash(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
+}
+
+func (s *UserService) Authenticate(ctx context.Context, username, password string) (string, error) {
+	user, err := s.repo.GetUserByUsername(ctx, username)
+	if err != nil {
+		return "", err
+	}
+
+	if !CheckPasswordHash(password, user.PasswordHash) {
+		return "", errors.New("invalid credentials")
+	}
+
+	token, err := auth.GenerateToken(auth.User{ID: user.ID})
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
+}
+
+func (s *UserService) ValidateToken(tokenString string) (*auth.Claims, error) {
+	return auth.ValidateToken(tokenString)
 }
