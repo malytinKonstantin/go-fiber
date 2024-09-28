@@ -29,22 +29,20 @@ func (a *App) SetupRoutes(app *fiber.App) {
 	}
 }
 
-// Метод для получения сервиса из определенного модуля
-func (a *App) GetService(serviceName string) shared.Service {
+func (a *App) GetService(key shared.ModuleKey) (any, bool) {
 	for _, module := range a.Modules {
-		if service := module.GetService(serviceName); service != nil {
-			return service
+		if service := module.GetService(key); service != nil {
+			return service, true
 		}
 	}
-	return nil
+	return nil, false
 }
 
-// Метод для получения репозитория из определенного модуля
-func (a *App) GetRepository(repositoryName string) shared.Repository {
+func (a *App) GetRepository(key shared.ModuleKey) (any, bool) {
 	for _, module := range a.Modules {
-		if repository := module.GetRepository(repositoryName); repository != nil {
-			return repository
+		if repository := module.GetRepository(key); repository != nil {
+			return repository, true
 		}
 	}
-	return nil
+	return nil, false
 }

@@ -16,17 +16,24 @@ type Repository interface {
 	// Общий интерфейс для репозиториев, если необходимо
 }
 
+type ModuleKey string
+
+const (
+	ServiceKey    ModuleKey = "service"
+	RepositoryKey ModuleKey = "repository"
+)
+
 type Module struct {
 	Controller   Controller
-	Services     map[string]Service
-	Repositories map[string]Repository
+	Services     map[ModuleKey]Service
+	Repositories map[ModuleKey]Repository
 }
 
 func NewModule(controller Controller) *Module {
 	return &Module{
 		Controller:   controller,
-		Services:     make(map[string]Service),
-		Repositories: make(map[string]Repository),
+		Services:     make(map[ModuleKey]Service),
+		Repositories: make(map[ModuleKey]Repository),
 	}
 }
 
@@ -34,18 +41,18 @@ func (m *Module) SetupRoutes(app *fiber.App) {
 	m.Controller.SetupRoutes(app)
 }
 
-func (m *Module) AddService(name string, service Service) {
-	m.Services[name] = service
+func (m *Module) AddService(key ModuleKey, service Service) {
+	m.Services[key] = service
 }
 
-func (m *Module) GetService(name string) Service {
-	return m.Services[name]
+func (m *Module) GetService(key ModuleKey) Service {
+	return m.Services[key]
 }
 
-func (m *Module) AddRepository(name string, repository Repository) {
-	m.Repositories[name] = repository
+func (m *Module) AddRepository(key ModuleKey, repository Repository) {
+	m.Repositories[key] = repository
 }
 
-func (m *Module) GetRepository(name string) Repository {
-	return m.Repositories[name]
+func (m *Module) GetRepository(key ModuleKey) Repository {
+	return m.Repositories[key]
 }
