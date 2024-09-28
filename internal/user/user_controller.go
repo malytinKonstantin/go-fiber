@@ -6,11 +6,11 @@ import (
 	"strconv"
 )
 
-func SetupRoutes(app *fiber.App, controller *UserController) {
-	app.Get("/users", controller.ListUsers)
-	app.Get("/users/:id", controller.GetUser)
-	app.Post("/users", controller.CreateUser)
-	app.Delete("/users/:id", controller.DeleteUser)
+func (c *UserController) SetupRoutes(app *fiber.App) {
+	app.Get("/users", c.ListUsers)
+	app.Get("/users/:id", c.GetUser)
+	app.Post("/users", c.CreateUser)
+	app.Delete("/users/:id", c.DeleteUser)
 }
 
 type UserController struct {

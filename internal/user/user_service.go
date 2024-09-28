@@ -2,11 +2,15 @@ package user
 
 import (
 	"context"
+
+	"github.com/malytinKonstantin/go-fiber/internal/shared"
 )
 
 type UserService struct {
 	repo *UserRepository
 }
+
+var _ shared.Service = (*UserService)(nil)
 
 func NewUserService(repo *UserRepository) *UserService {
 	return &UserService{repo: repo}

@@ -4,21 +4,51 @@ import (
 	"database/sql"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/malytinKonstantin/go-fiber/internal/shared"
 	"github.com/malytinKonstantin/go-fiber/internal/user"
 )
 
 type App struct {
-	UserModule *user.Module
-	DB         *sql.DB
+	Modules []*shared.Module
+	DB      *sql.DB
 }
 
 func NewApp(db *sql.DB) *App {
 	return &App{
-		UserModule: user.SetupModule(db),
-		DB:         db,
+		Modules: []*shared.Module{
+			user.SetupModule(db),
+			// Добавьте другие модули здесь
+		},
+		DB: db,
 	}
 }
 
 func (a *App) SetupRoutes(app *fiber.App) {
-	a.UserModule.SetupRoutes(app)
+	for _, module := range a.Modules {
+		module.SetupRoutes(app)
+	}
+}
+
+// Метод для получения сервиса из определенного модуля
+func (a *App) GetService(moduleName string, serviceName string) shared.Service {
+	for _, module := range a.Modules {
+		if controller, ok := module.Controller.(interface{ ModuleName() string }); ok {
+			if controller.ModuleName() == moduleName {
+				return module.GetService(serviceName)
+			}
+		}
+	}
+	return nil
+}
+
+// Метод для получения репозитория из определенного модуля
+func (a *App) GetRepository(moduleName string, repositoryName string) shared.Repository {
+	for _, module := range a.Modules {
+		if controller, ok := module.Controller.(interface{ ModuleName() string }); ok {
+			if controller.ModuleName() == moduleName {
+				return module.GetRepository(repositoryName)
+			}
+		}
+	}
+	return nil
 }
