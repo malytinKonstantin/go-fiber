@@ -23,13 +23,13 @@ func NewUserController(service *UserService) *UserController {
 // @Summary Set up user routes
 // @Description Set up routes for user-related operations
 // @Tags users
-func (c *UserController) SetupRoutes(app *fiber.App) {
-	app.Get("/users", c.ListUsers)
-	app.Get("/users/:id", c.GetUser)
-	app.Get("/users/username/:username", c.GetUserByUsername)
-	app.Post("/users", c.CreateUser)
-	app.Put("/users/:id", c.UpdateUser)
-	app.Delete("/users/:id", c.DeleteUser)
+func (c *UserController) SetupRoutes(router fiber.Router) {
+	router.Get("/users", c.ListUsers)
+	router.Get("/users/:id", c.GetUser)
+	router.Get("/users/username/:username", c.GetUserByUsername)
+	router.Post("/users", c.CreateUser)
+	router.Put("/users/:id", c.UpdateUser)
+	router.Delete("/users/:id", c.DeleteUser)
 }
 
 // GetUser retrieves a user by ID

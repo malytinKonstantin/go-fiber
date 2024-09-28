@@ -14,6 +14,6 @@ func NewModule(controller *UserController) *Module {
 	}
 }
 
-func (m *Module) SetupRoutes(app *fiber.App) {
-	m.Controller.SetupRoutes(app)
+func (m *Module) SetupRoutes(router fiber.Router) {
+	m.Controller.SetupRoutes(router)
 }

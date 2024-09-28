@@ -19,6 +19,6 @@ func NewApp(userModule *user.Module, db *sql.DB) *App {
 	}
 }
 
-func (a *App) SetupRoutes(app *fiber.App) {
-	a.UserModule.SetupRoutes(app)
+func (a *App) SetupRoutes(router fiber.Router) {
+	a.UserModule.SetupRoutes(router)
 }

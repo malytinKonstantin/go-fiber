@@ -16,6 +16,7 @@ import (
 func main() {
 	dbURL := viper.GetString("DATABASE_URL")
 	port := viper.GetString("PORT")
+	apiPrefix := viper.GetString("API_PREFIX")
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatal(err)
@@ -30,9 +31,9 @@ func main() {
 	fiberApp := fiber.New(fiber.Config{
 		JSONDecoder: json.Unmarshal,
 	})
-	app.SetupRoutes(fiberApp)
-
 	fiberApp.Get("/swagger/*", swagger.HandlerDefault)
+	api := fiberApp.Group(apiPrefix)
+	app.SetupRoutes(api)
 
 	log.Fatal(fiberApp.Listen(fmt.Sprintf(":%s", port)))
 }
