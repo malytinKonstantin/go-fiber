@@ -6,7 +6,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	_ "github.com/lib/pq"
-	"github.com/malytinKonstantin/go-fiber/internal/app"
 )
 
 func main() {
@@ -16,15 +15,13 @@ func main() {
 	}
 	defer db.Close()
 
-	// Инициализация приложения
-	application := app.NewApp(db)
+	app, err := InitializeApp(db)
+	if err != nil {
+		log.Fatalf("Failed to initialize app: %v", err)
+	}
 
-	// Создание Fiber приложения
 	fiberApp := fiber.New()
+	app.SetupRoutes(fiberApp)
 
-	// Настройка маршрутов
-	application.SetupRoutes(fiberApp)
-
-	// Запуск сервера
 	log.Fatal(fiberApp.Listen(":3000"))
 }

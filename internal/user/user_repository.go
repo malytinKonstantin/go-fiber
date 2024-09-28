@@ -5,14 +5,11 @@ import (
 	"database/sql"
 
 	"github.com/malytinKonstantin/go-fiber/internal/db"
-	"github.com/malytinKonstantin/go-fiber/internal/shared"
 )
 
 type UserRepository struct {
 	q *db.Queries
 }
-
-var _ shared.Repository = (*UserRepository)(nil)
 
 func NewUserRepository(dbConn *sql.DB) *UserRepository {
 	return &UserRepository{

@@ -1,17 +1,10 @@
 package user
 
 import (
-	"github.com/gofiber/fiber/v2"
-
 	"strconv"
-)
 
-func (c *UserController) SetupRoutes(app *fiber.App) {
-	app.Get("/users", c.ListUsers)
-	app.Get("/users/:id", c.GetUser)
-	app.Post("/users", c.CreateUser)
-	app.Delete("/users/:id", c.DeleteUser)
-}
+	"github.com/gofiber/fiber/v2"
+)
 
 type UserController struct {
 	service *UserService
@@ -19,6 +12,13 @@ type UserController struct {
 
 func NewUserController(service *UserService) *UserController {
 	return &UserController{service: service}
+}
+
+func (c *UserController) SetupRoutes(app *fiber.App) {
+	app.Get("/users", c.ListUsers)
+	app.Get("/users/:id", c.GetUser)
+	app.Post("/users", c.CreateUser)
+	app.Delete("/users/:id", c.DeleteUser)
 }
 
 func (c *UserController) GetUser(ctx *fiber.Ctx) error {

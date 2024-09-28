@@ -1,25 +1,19 @@
 package user
 
 import (
-	"database/sql"
-
-	"github.com/malytinKonstantin/go-fiber/internal/shared"
+	"github.com/gofiber/fiber/v2"
 )
 
-const (
-	UserServiceKey    shared.ModuleKey = "user_service"
-	UserRepositoryKey shared.ModuleKey = "user_repository"
-)
+type Module struct {
+	Controller *UserController
+}
 
-func SetupModule(db *sql.DB) *shared.Module {
-	userRepo := NewUserRepository(db)
-	userService := NewUserService(userRepo)
-	userController := NewUserController(userService)
+func NewModule(controller *UserController) *Module {
+	return &Module{
+		Controller: controller,
+	}
+}
 
-	module := shared.NewModule(userController)
-
-	module.AddRepository(UserRepositoryKey, userRepo)
-	module.AddService(UserServiceKey, userService)
-
-	return module
+func (m *Module) SetupRoutes(app *fiber.App) {
+	m.Controller.SetupRoutes(app)
 }
