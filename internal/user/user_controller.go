@@ -1,11 +1,11 @@
 package user
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/malytinKonstantin/go-fiber/internal/db"
+	"github.com/malytinKonstantin/go-fiber/internal/middleware"
 )
 
 // swagger:model FiberMap
@@ -27,7 +27,10 @@ func (c *UserController) SetupRoutes(router fiber.Router) {
 	router.Get("/users", c.ListUsers)
 	router.Get("/users/:id", c.GetUser)
 	router.Get("/users/username/:username", c.GetUserByUsername)
+
+	middleware.RegisterDTO("/api/v1/users", "POST", CreateUserParams{})
 	router.Post("/users", c.CreateUser)
+
 	router.Put("/users/:id", c.UpdateUser)
 	router.Delete("/users/:id", c.DeleteUser)
 }
@@ -42,7 +45,7 @@ func (c *UserController) SetupRoutes(router fiber.Router) {
 // @Success 200 {object} User
 // @Failure 400 {object} FiberMap
 // @Failure 404 {object} FiberMap
-// @Router /users/{id} [get]
+// @Router /api/v1/users/{id} [get]
 func (c *UserController) GetUser(ctx *fiber.Ctx) error {
 	id, err := strconv.ParseInt(ctx.Params("id"), 10, 32)
 	if err != nil {
@@ -66,7 +69,7 @@ func (c *UserController) GetUser(ctx *fiber.Ctx) error {
 // @Param username path string true "Username"
 // @Success 200 {object} User
 // @Failure 404 {object} FiberMap
-// @Router /users/username/{username} [get]
+// @Router /api/v1/users/username/{username} [get]
 func (c *UserController) GetUserByUsername(ctx *fiber.Ctx) error {
 	username := ctx.Params("username")
 	user, err := c.service.GetUserByUsername(ctx.Context(), username)
@@ -87,7 +90,7 @@ func (c *UserController) GetUserByUsername(ctx *fiber.Ctx) error {
 // @Param offset query int false "Offset" default(0)
 // @Success 200 {array} User
 // @Failure 500 {object} FiberMap
-// @Router /users [get]
+// @Router /api/v1/users [get]
 func (c *UserController) ListUsers(ctx *fiber.Ctx) error {
 	limit, _ := strconv.ParseInt(ctx.Query("limit", "10"), 10, 32)
 	offset, _ := strconv.ParseInt(ctx.Query("offset", "0"), 10, 32)
@@ -110,18 +113,21 @@ func (c *UserController) ListUsers(ctx *fiber.Ctx) error {
 // @Success 201 {object} User
 // @Failure 400 {object} FiberMap
 // @Failure 500 {object} FiberMap
-// @Router /users [post]
+// @Router /api/v1/users [post]
 func (c *UserController) CreateUser(ctx *fiber.Ctx) error {
-	var input CreateUserParams
-
-	if err := ctx.BodyParser(&input); err != nil {
-		fmt.Println(err)
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid input"})
+	dtoInterface := ctx.Locals("dto")
+	if dtoInterface == nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid input: DTO is nil"})
 	}
 
-	user, err := c.service.CreateUser(ctx.Context(), input)
+	dto, ok := dtoInterface.(*CreateUserParams)
+	if !ok {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Internal server error: invalid DTO type"})
+	}
+
+	user, err := c.service.CreateUser(ctx.Context(), *dto)
 	if err != nil {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to create user"})
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
 	return ctx.Status(fiber.StatusCreated).JSON(user)
@@ -138,7 +144,7 @@ func (c *UserController) CreateUser(ctx *fiber.Ctx) error {
 // @Success 200 {object} User
 // @Failure 400 {object} FiberMap
 // @Failure 500 {object} FiberMap
-// @Router /users/{id} [put]
+// @Router /api/v1/users/{id} [put]
 func (c *UserController) UpdateUser(ctx *fiber.Ctx) error {
 	id, err := strconv.ParseInt(ctx.Params("id"), 10, 32)
 	if err != nil {
@@ -170,7 +176,7 @@ func (c *UserController) UpdateUser(ctx *fiber.Ctx) error {
 // @Success 204 "No Content"
 // @Failure 400 {object} FiberMap
 // @Failure 500 {object} FiberMap
-// @Router /users/{id} [delete]
+// @Router /api/v1/users/{id} [delete]
 func (c *UserController) DeleteUser(ctx *fiber.Ctx) error {
 	id, err := strconv.ParseInt(ctx.Params("id"), 10, 32)
 	if err != nil {

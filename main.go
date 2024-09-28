@@ -10,6 +10,7 @@ import (
 	"github.com/gofiber/swagger"
 	_ "github.com/lib/pq"
 	_ "github.com/malytinKonstantin/go-fiber/docs"
+	"github.com/malytinKonstantin/go-fiber/internal/middleware"
 	"github.com/spf13/viper"
 )
 
@@ -31,10 +32,11 @@ func main() {
 	fiberApp := fiber.New(fiber.Config{
 		JSONDecoder: json.Unmarshal,
 	})
-	fiberApp.Get("/swagger/*", swagger.HandlerDefault)
 	api := fiberApp.Group(apiPrefix)
+	api.Use(middleware.ValidateDTO())
 	app.SetupRoutes(api)
 
+	fiberApp.Get("/swagger/*", swagger.HandlerDefault)
 	log.Fatal(fiberApp.Listen(fmt.Sprintf(":%s", port)))
 }
 

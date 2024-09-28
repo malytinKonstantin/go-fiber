@@ -29,3 +29,10 @@ func (ns *NullString) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(nil)
 }
+
+func (ns NullString) IsValid(maxLength int) bool {
+	if !ns.Valid {
+		return true
+	}
+	return len(ns.String) <= maxLength
+}
