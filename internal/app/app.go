@@ -30,24 +30,20 @@ func (a *App) SetupRoutes(app *fiber.App) {
 }
 
 // Метод для получения сервиса из определенного модуля
-func (a *App) GetService(moduleName string, serviceName string) shared.Service {
+func (a *App) GetService(serviceName string) shared.Service {
 	for _, module := range a.Modules {
-		if controller, ok := module.Controller.(interface{ ModuleName() string }); ok {
-			if controller.ModuleName() == moduleName {
-				return module.GetService(serviceName)
-			}
+		if service := module.GetService(serviceName); service != nil {
+			return service
 		}
 	}
 	return nil
 }
 
 // Метод для получения репозитория из определенного модуля
-func (a *App) GetRepository(moduleName string, repositoryName string) shared.Repository {
+func (a *App) GetRepository(repositoryName string) shared.Repository {
 	for _, module := range a.Modules {
-		if controller, ok := module.Controller.(interface{ ModuleName() string }); ok {
-			if controller.ModuleName() == moduleName {
-				return module.GetRepository(repositoryName)
-			}
+		if repository := module.GetRepository(repositoryName); repository != nil {
+			return repository
 		}
 	}
 	return nil
