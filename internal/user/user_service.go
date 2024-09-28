@@ -2,6 +2,8 @@ package user
 
 import (
 	"context"
+
+	"github.com/malytinKonstantin/go-fiber/internal/db"
 )
 
 type UserService struct {
@@ -16,12 +18,20 @@ func (s *UserService) GetUser(ctx context.Context, id int32) (User, error) {
 	return s.repo.GetUser(ctx, id)
 }
 
-func (s *UserService) ListUsers(ctx context.Context) ([]User, error) {
-	return s.repo.ListUsers(ctx)
+func (s *UserService) GetUserByUsername(ctx context.Context, username string) (User, error) {
+	return s.repo.GetUserByUsername(ctx, username)
 }
 
-func (s *UserService) CreateUser(ctx context.Context, name, email string) (User, error) {
-	return s.repo.CreateUser(ctx, name, email)
+func (s *UserService) ListUsers(ctx context.Context, limit, offset int32) ([]User, error) {
+	return s.repo.ListUsers(ctx, limit, offset)
+}
+
+func (s *UserService) CreateUser(ctx context.Context, params db.CreateUserParams) (User, error) {
+	return s.repo.CreateUser(ctx, params)
+}
+
+func (s *UserService) UpdateUser(ctx context.Context, params db.UpdateUserParams) (User, error) {
+	return s.repo.UpdateUser(ctx, params)
 }
 
 func (s *UserService) DeleteUser(ctx context.Context, id int32) error {

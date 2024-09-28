@@ -14,7 +14,7 @@ GORUN=$(GOCMD) run
 # Линтеры и инструменты
 GOLINT=golangci-lint
 GOIMPORTS=goimports
-WIRE=wire
+WIRE=$(HOME)/go/bin/wire
 
 .PHONY: all build clean test coverage run lint fmt mod-tidy wire help
 

@@ -7,6 +7,17 @@ import (
 	"github.com/malytinKonstantin/go-fiber/internal/db"
 )
 
+type User struct {
+	ID           int32  `json:"id"`
+	Username     string `json:"username"`
+	Email        string `json:"email"`
+	PasswordHash string `json:"password_hash"`
+	FullName     string `json:"full_name"`
+	Bio          string `json:"bio"`
+	CreatedAt    string `json:"created_at"`
+	UpdatedAt    string `json:"updated_at"`
+}
+
 type UserRepository struct {
 	q *db.Queries
 }
@@ -18,48 +29,69 @@ func NewUserRepository(dbConn *sql.DB) *UserRepository {
 }
 
 func (r *UserRepository) GetUser(ctx context.Context, id int32) (User, error) {
-	user, err := r.q.GetUser(ctx, id)
+	dbUser, err := r.q.GetUser(ctx, id)
 	if err != nil {
 		return User{}, err
 	}
-	return User{
-		ID:    user.ID,
-		Name:  user.Name,
-		Email: user.Email,
-	}, nil
+	return convertDbUserToUser(dbUser), nil
 }
 
-func (r *UserRepository) ListUsers(ctx context.Context) ([]User, error) {
-	dbUsers, err := r.q.ListUsers(ctx)
+func (r *UserRepository) GetUserByUsername(ctx context.Context, username string) (User, error) {
+	dbUser, err := r.q.GetUserByUsername(ctx, username)
+	if err != nil {
+		return User{}, err
+	}
+	return convertDbUserToUser(dbUser), nil
+}
+
+func (r *UserRepository) ListUsers(ctx context.Context, limit, offset int32) ([]User, error) {
+	dbUsers, err := r.q.ListUsers(ctx, db.ListUsersParams{
+		Limit:  limit,
+		Offset: offset,
+	})
 	if err != nil {
 		return nil, err
 	}
-	users := make([]User, len(dbUsers))
-	for i, u := range dbUsers {
-		users[i] = User{
-			ID:    u.ID,
-			Name:  u.Name,
-			Email: u.Email,
-		}
-	}
-	return users, nil
+	return convertDbUsersToUsers(dbUsers), nil
 }
 
-func (r *UserRepository) CreateUser(ctx context.Context, name, email string) (User, error) {
-	user, err := r.q.CreateUser(ctx, db.CreateUserParams{
-		Name:  name,
-		Email: email,
-	})
+func (r *UserRepository) CreateUser(ctx context.Context, params db.CreateUserParams) (User, error) {
+	dbUser, err := r.q.CreateUser(ctx, params)
 	if err != nil {
 		return User{}, err
 	}
-	return User{
-		ID:    user.ID,
-		Name:  user.Name,
-		Email: user.Email,
-	}, nil
+	return convertDbUserToUser(dbUser), nil
+}
+
+func (r *UserRepository) UpdateUser(ctx context.Context, params db.UpdateUserParams) (User, error) {
+	dbUser, err := r.q.UpdateUser(ctx, params)
+	if err != nil {
+		return User{}, err
+	}
+	return convertDbUserToUser(dbUser), nil
 }
 
 func (r *UserRepository) DeleteUser(ctx context.Context, id int32) error {
 	return r.q.DeleteUser(ctx, id)
+}
+
+func convertDbUserToUser(dbUser db.Users) User {
+	return User{
+		ID:           dbUser.ID,
+		Username:     dbUser.Username,
+		Email:        dbUser.Email,
+		PasswordHash: dbUser.PasswordHash,
+		FullName:     dbUser.FullName.String,
+		Bio:          dbUser.Bio.String,
+		CreatedAt:    dbUser.CreatedAt.Time.String(),
+		UpdatedAt:    dbUser.UpdatedAt.Time.String(),
+	}
+}
+
+func convertDbUsersToUsers(dbUsers []db.Users) []User {
+	users := make([]User, len(dbUsers))
+	for i, dbUser := range dbUsers {
+		users[i] = convertDbUserToUser(dbUser)
+	}
+	return users
 }

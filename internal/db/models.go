@@ -4,8 +4,17 @@
 
 package db
 
-type User struct {
-	ID    int32
-	Name  string
-	Email string
+import (
+	"database/sql"
+)
+
+type Users struct {
+	ID           int32          `json:"id"`
+	Username     string         `json:"username"`
+	Email        string         `json:"email"`
+	PasswordHash string         `json:"password_hash"`
+	FullName     sql.NullString `json:"full_name"`
+	Bio          sql.NullString `json:"bio"`
+	CreatedAt    sql.NullTime   `json:"created_at"`
+	UpdatedAt    sql.NullTime   `json:"updated_at"`
 }
