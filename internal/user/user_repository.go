@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/malytinKonstantin/go-fiber/internal/db"
 )
@@ -44,11 +45,8 @@ func (r *UserRepository) GetUserByUsername(ctx context.Context, username string)
 	return convertDbUserToUser(dbUser), nil
 }
 
-func (r *UserRepository) ListUsers(ctx context.Context, limit, offset int32) ([]User, error) {
-	dbUsers, err := r.q.ListUsers(ctx, db.ListUsersParams{
-		Limit:  limit,
-		Offset: offset,
-	})
+func (r *UserRepository) SearchUsers(ctx context.Context, params db.SearchUsersParams) ([]User, error) {
+	dbUsers, err := r.q.SearchUsers(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -83,8 +81,8 @@ func convertDbUserToUser(dbUser db.Users) User {
 		PasswordHash: dbUser.PasswordHash,
 		FullName:     dbUser.FullName.String,
 		Bio:          dbUser.Bio.String,
-		CreatedAt:    dbUser.CreatedAt.Time.String(),
-		UpdatedAt:    dbUser.UpdatedAt.Time.String(),
+		CreatedAt:    dbUser.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:    dbUser.UpdatedAt.Format(time.RFC3339),
 	}
 }
 

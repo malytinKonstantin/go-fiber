@@ -3,6 +3,7 @@ package shared
 import (
 	"database/sql"
 	"encoding/json"
+	"time"
 )
 
 type NullString struct {
@@ -35,4 +36,33 @@ func (ns NullString) IsValid(maxLength int) bool {
 		return true
 	}
 	return len(ns.String) <= maxLength
+}
+
+type NullTime struct {
+	sql.NullTime
+}
+
+func (nt *NullTime) UnmarshalJSON(data []byte) error {
+	var t *time.Time
+	if err := json.Unmarshal(data, &t); err != nil {
+		return err
+	}
+	if t != nil {
+		nt.Valid = true
+		nt.Time = *t
+	} else {
+		nt.Valid = false
+	}
+	return nil
+}
+
+func (nt *NullTime) MarshalJSON() ([]byte, error) {
+	if nt.Valid {
+		return json.Marshal(nt.Time)
+	}
+	return json.Marshal(nil)
+}
+
+func (nt NullTime) IsValid() bool {
+	return nt.Valid && !nt.Time.IsZero()
 }

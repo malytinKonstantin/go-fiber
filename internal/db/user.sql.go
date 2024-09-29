@@ -101,24 +101,62 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (Users
 	return i, err
 }
 
-const ListUsers = `-- name: ListUsers :many
-SELECT id, username, email, password_hash, full_name, bio, created_at, updated_at FROM users
-ORDER BY id
-LIMIT $1 OFFSET $2
+const SearchUsers = `-- name: SearchUsers :many
+SELECT id, username, email, password_hash, full_name, bio, created_at, updated_at
+FROM users
+WHERE 
+    ($1::text IS NULL OR username ILIKE '%' || $1::text || '%')
+    AND ($2::text IS NULL OR email ILIKE '%' || $2::text || '%')
+    AND ($3::text IS NULL OR full_name ILIKE '%' || $3::text || '%')
+    AND ($4::text IS NULL OR bio ILIKE '%' || $4::text || '%')
+    AND ($5::pgtype.Timestamp IS NULL OR created_at >= $5::pgtype.Timestamp)
+    AND ($6::pgtype.Timestamp IS NULL OR created_at <= $6::pgtype.Timestamp)
+ORDER BY
+    CASE 
+        WHEN $7::text = 'username_asc' THEN username
+        WHEN $7::text = 'username_desc' THEN username
+        WHEN $7::text = 'email_asc' THEN email
+        WHEN $7::text = 'email_desc' THEN email
+        WHEN $7::text = 'created_at_asc' THEN created_at::text
+        WHEN $7::text = 'created_at_desc' THEN created_at::text
+        ELSE id::text
+    END
+    || CASE 
+        WHEN $7::text LIKE '%desc' THEN ' DESC'
+        ELSE ' ASC'
+    END
+LIMIT $9::int OFFSET $8::int
 `
 
-type ListUsersParams struct {
-	Limit  int32 `json:"limit"`
-	Offset int32 `json:"offset"`
+type SearchUsersParams struct {
+	Username    string        `json:"username"`
+	Email       string        `json:"email"`
+	FullName    string        `json:"full_name"`
+	Bio         string        `json:"bio"`
+	CreatedFrom interface{}   `json:"created_from"`
+	CreatedTo   interface{}   `json:"created_to"`
+	SortBy      string        `json:"sort_by"`
+	OffsetParam sql.NullInt32 `json:"offset_param"`
+	LimitParam  sql.NullInt32 `json:"limit_param"`
 }
 
-func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]Users, error) {
-	rows, err := q.query(ctx, q.listUsersStmt, ListUsers, arg.Limit, arg.Offset)
+func (q *Queries) SearchUsers(ctx context.Context, arg SearchUsersParams) ([]Users, error) {
+	rows, err := q.query(ctx, q.searchUsersStmt, SearchUsers,
+		arg.Username,
+		arg.Email,
+		arg.FullName,
+		arg.Bio,
+		arg.CreatedFrom,
+		arg.CreatedTo,
+		arg.SortBy,
+		arg.OffsetParam,
+		arg.LimitParam,
+	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Users
+	items := []Users{}
 	for rows.Next() {
 		var i Users
 		if err := rows.Scan(
@@ -146,34 +184,34 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]Users, 
 
 const UpdateUser = `-- name: UpdateUser :one
 UPDATE users
-SET 
-    username = COALESCE($2, username),
-    email = COALESCE($3, email),
-    password_hash = COALESCE($4, password_hash),
-    full_name = COALESCE($5, full_name),
-    bio = COALESCE($6, bio),
+SET
+    username = COALESCE($1, username),
+    email = COALESCE($2, email),
+    password_hash = COALESCE($3, password_hash),
+    full_name = COALESCE($4, full_name),
+    bio = COALESCE($5, bio),
     updated_at = CURRENT_TIMESTAMP
-WHERE id = $1
+WHERE id = $6
 RETURNING id, username, email, password_hash, full_name, bio, created_at, updated_at
 `
 
 type UpdateUserParams struct {
-	ID           int32          `json:"id"`
 	Username     string         `json:"username"`
 	Email        string         `json:"email"`
 	PasswordHash string         `json:"password_hash"`
 	FullName     sql.NullString `json:"full_name"`
 	Bio          sql.NullString `json:"bio"`
+	ID           int32          `json:"id"`
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (Users, error) {
 	row := q.queryRow(ctx, q.updateUserStmt, UpdateUser,
-		arg.ID,
 		arg.Username,
 		arg.Email,
 		arg.PasswordHash,
 		arg.FullName,
 		arg.Bio,
+		arg.ID,
 	)
 	var i Users
 	err := row.Scan(

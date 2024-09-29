@@ -9,9 +9,9 @@ sql:
         out: "internal/db"
         emit_json_tags: true
         emit_prepared_queries: true
-        emit_interface: false 
+        emit_interface: true 
         emit_exact_table_names: true
-        emit_empty_slices: false  
+        emit_empty_slices: true  
         emit_exported_queries: true
         emit_result_struct_pointers: false
         emit_methods_with_db_argument: false
@@ -19,3 +19,14 @@ sql:
         emit_enum_valid_method: true
         emit_all_enum_values: true
         json_tags_case_style: "snake"
+        overrides:
+          - db_type: "timestamptz"
+            go_type: "github.com/jackc/pgtype.Timestamp"
+            nullable: true
+          - db_type: "timestamp"
+            go_type: "github.com/jackc/pgtype.Timestamp"
+            nullable: true
+          - column: "users.created_at"
+            go_type: "time.Time"
+          - column: "users.updated_at"
+            go_type: "time.Time"

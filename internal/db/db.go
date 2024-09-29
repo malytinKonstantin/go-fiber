@@ -36,8 +36,8 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.getUserByUsernameStmt, err = db.PrepareContext(ctx, GetUserByUsername); err != nil {
 		return nil, fmt.Errorf("error preparing query GetUserByUsername: %w", err)
 	}
-	if q.listUsersStmt, err = db.PrepareContext(ctx, ListUsers); err != nil {
-		return nil, fmt.Errorf("error preparing query ListUsers: %w", err)
+	if q.searchUsersStmt, err = db.PrepareContext(ctx, SearchUsers); err != nil {
+		return nil, fmt.Errorf("error preparing query SearchUsers: %w", err)
 	}
 	if q.updateUserStmt, err = db.PrepareContext(ctx, UpdateUser); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateUser: %w", err)
@@ -67,9 +67,9 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing getUserByUsernameStmt: %w", cerr)
 		}
 	}
-	if q.listUsersStmt != nil {
-		if cerr := q.listUsersStmt.Close(); cerr != nil {
-			err = fmt.Errorf("error closing listUsersStmt: %w", cerr)
+	if q.searchUsersStmt != nil {
+		if cerr := q.searchUsersStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing searchUsersStmt: %w", cerr)
 		}
 	}
 	if q.updateUserStmt != nil {
@@ -120,7 +120,7 @@ type Queries struct {
 	deleteUserStmt        *sql.Stmt
 	getUserStmt           *sql.Stmt
 	getUserByUsernameStmt *sql.Stmt
-	listUsersStmt         *sql.Stmt
+	searchUsersStmt       *sql.Stmt
 	updateUserStmt        *sql.Stmt
 }
 
@@ -132,7 +132,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		deleteUserStmt:        q.deleteUserStmt,
 		getUserStmt:           q.getUserStmt,
 		getUserByUsernameStmt: q.getUserByUsernameStmt,
-		listUsersStmt:         q.listUsersStmt,
+		searchUsersStmt:       q.searchUsersStmt,
 		updateUserStmt:        q.updateUserStmt,
 	}
 }

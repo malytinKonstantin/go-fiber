@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
+	"time"
 
 	"github.com/malytinKonstantin/go-fiber/internal/auth"
 	"github.com/malytinKonstantin/go-fiber/internal/db"
@@ -26,27 +28,77 @@ func (s *UserService) GetUserByUsername(ctx context.Context, username string) (U
 	return s.repo.GetUserByUsername(ctx, username)
 }
 
-func (s *UserService) ListUsers(ctx context.Context, limit, offset int32) ([]User, error) {
-	return s.repo.ListUsers(ctx, limit, offset)
+func (s *UserService) SearchUsers(ctx context.Context, params SearchUsersParams) ([]User, error) {
+	dbParams := db.SearchUsersParams{
+		Username:    params.Username,
+		Email:       params.Email,
+		FullName:    params.FullName,
+		Bio:         params.Bio,
+		SortBy:      params.SortBy,
+		LimitParam:  sql.NullInt32{Int32: params.Limit, Valid: true},
+		OffsetParam: sql.NullInt32{Int32: params.Offset, Valid: true},
+	}
+
+	if params.CreatedFrom != "" {
+		createdFrom, err := time.Parse("2006-01-02", params.CreatedFrom)
+		if err != nil {
+			return nil, fmt.Errorf("неверный формат даты CreatedFrom: %w", err)
+		}
+		dbParams.CreatedFrom = &createdFrom
+	}
+
+	if params.CreatedTo != "" {
+		createdTo, err := time.Parse("2006-01-02", params.CreatedTo)
+		if err != nil {
+			return nil, fmt.Errorf("неверный формат даты CreatedTo: %w", err)
+		}
+		dbParams.CreatedTo = &createdTo
+	}
+
+	return s.repo.SearchUsers(ctx, dbParams)
 }
 
-func (s *UserService) CreateUser(ctx context.Context, params CreateUserParams) (User, error) {
-	hashedPassword, err := HashPassword(params.Password)
+func (s *UserService) CreateUser(ctx context.Context, dto CreateUserDto) (User, error) {
+	hashedPassword, err := HashPassword(dto.Password)
 	if err != nil {
 		return User{}, err
 	}
 	dbParams := db.CreateUserParams{
-		Username:     params.Username,
-		Email:        params.Email,
+		Username:     dto.Username,
+		Email:        dto.Email,
 		PasswordHash: hashedPassword,
-		FullName:     sql.NullString{String: params.FullName.String, Valid: params.FullName.Valid},
-		Bio:          sql.NullString{String: params.Bio.String, Valid: params.Bio.Valid},
+		FullName:     sql.NullString{String: dto.FullName.String, Valid: dto.FullName.Valid},
+		Bio:          sql.NullString{String: dto.Bio.String, Valid: dto.Bio.Valid},
 	}
 	return s.repo.CreateUser(ctx, dbParams)
 }
 
-func (s *UserService) UpdateUser(ctx context.Context, params db.UpdateUserParams) (User, error) {
-	return s.repo.UpdateUser(ctx, params)
+func (s *UserService) UpdateUser(ctx context.Context, id int32, dto UpdateUserDto) (User, error) {
+	dbParams := db.UpdateUserParams{
+		ID: id,
+	}
+
+	if dto.Username.Valid {
+		dbParams.Username = dto.Username.String
+	}
+	if dto.Email.Valid {
+		dbParams.Email = dto.Email.String
+	}
+	if dto.Password.Valid {
+		hashedPassword, err := HashPassword(dto.Password.String)
+		if err != nil {
+			return User{}, err
+		}
+		dbParams.PasswordHash = hashedPassword
+	}
+	if dto.FullName.Valid {
+		dbParams.FullName = sql.NullString{String: dto.FullName.String, Valid: true}
+	}
+	if dto.Bio.Valid {
+		dbParams.Bio = sql.NullString{String: dto.Bio.String, Valid: true}
+	}
+
+	return s.repo.UpdateUser(ctx, dbParams)
 }
 
 func (s *UserService) DeleteUser(ctx context.Context, id int32) error {
@@ -83,4 +135,33 @@ func (s *UserService) Authenticate(ctx context.Context, username, password strin
 
 func (s *UserService) ValidateToken(tokenString string) (*auth.Claims, error) {
 	return auth.ValidateToken(tokenString)
+}
+
+type SearchUsersParams struct {
+	Username    string
+	Email       string
+	FullName    string
+	Bio         string
+	CreatedFrom string
+	CreatedTo   string
+	SortBy      string
+	Limit       int32
+	Offset      int32
+}
+
+type CreateUserParams struct {
+	Username string
+	Email    string
+	Password string
+	FullName string
+	Bio      string
+}
+
+type UpdateUserParams struct {
+	ID           int32
+	Username     string
+	Email        string
+	PasswordHash string
+	FullName     string
+	Bio          string
 }
