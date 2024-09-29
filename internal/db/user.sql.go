@@ -29,6 +29,8 @@ type CreateUserParams struct {
 	Bio          sql.NullString `json:"bio"`
 }
 
+// Creates a new user with the provided information
+// Returns the newly created user
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (Users, error) {
 	row := q.queryRow(ctx, q.createUserStmt, CreateUser,
 		arg.Username,
@@ -56,6 +58,8 @@ DELETE FROM users
 WHERE id = $1
 `
 
+// Deletes a user with the specified ID
+// This operation is irreversible
 func (q *Queries) DeleteUser(ctx context.Context, id int32) error {
 	_, err := q.exec(ctx, q.deleteUserStmt, DeleteUser, id)
 	return err
@@ -66,6 +70,8 @@ SELECT id, username, email, password_hash, full_name, bio, created_at, updated_a
 WHERE id = $1 LIMIT 1
 `
 
+// Retrieves a user by their ID
+// Returns a single user or null if not found
 func (q *Queries) GetUser(ctx context.Context, id int32) (Users, error) {
 	row := q.queryRow(ctx, q.getUserStmt, GetUser, id)
 	var i Users
@@ -87,6 +93,8 @@ SELECT id, username, email, password_hash, full_name, bio, created_at, updated_a
 WHERE username = $1 LIMIT 1
 `
 
+// Retrieves a user by their username
+// Returns a single user or null if not found
 func (q *Queries) GetUserByUsername(ctx context.Context, username string) (Users, error) {
 	row := q.queryRow(ctx, q.getUserByUsernameStmt, GetUserByUsername, username)
 	var i Users
@@ -117,14 +125,14 @@ ORDER BY
     CASE 
         WHEN $7::text = 'username_asc' THEN username
         WHEN $7::text = 'email_asc' THEN email
-        WHEN $7::text = 'created_at_asc' THEN NULL -- We’ll handle this separately
-        WHEN $7::text = 'id_asc' THEN NULL -- We’ll handle this separately
+        WHEN $7::text = 'created_at_asc' THEN NULL
+        WHEN $7::text = 'id_asc' THEN NULL
     END ASC,
     CASE 
         WHEN $7::text = 'username_desc' THEN username
         WHEN $7::text = 'email_desc' THEN email
-        WHEN $7::text = 'created_at_desc' THEN NULL -- We’ll handle this separately
-        WHEN $7::text = 'id_desc' THEN NULL -- We’ll handle this separately
+        WHEN $7::text = 'created_at_desc' THEN NULL
+        WHEN $7::text = 'id_desc' THEN NULL
     END DESC,
     CASE WHEN $7::text = 'created_at_asc' THEN created_at END ASC,
     CASE WHEN $7::text = 'id_asc' THEN id END ASC,
@@ -147,6 +155,10 @@ type SearchUsersParams struct {
 	LimitParam  sql.NullInt32 `json:"limit_param"`
 }
 
+// Searches for users based on various criteria
+// Supports partial matching and date range for created_at
+// Allows sorting by different fields in ascending or descending order
+// Returns a paginated list of users
 func (q *Queries) SearchUsers(ctx context.Context, arg SearchUsersParams) ([]Users, error) {
 	rows, err := q.query(ctx, q.searchUsersStmt, SearchUsers,
 		arg.Username,
@@ -211,6 +223,9 @@ type UpdateUserParams struct {
 	ID           int32          `json:"id"`
 }
 
+// Updates user information for the specified user ID
+// Only updates non-null fields, leaving others unchanged
+// Returns the updated user information
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (Users, error) {
 	row := q.queryRow(ctx, q.updateUserStmt, UpdateUser,
 		arg.Username,

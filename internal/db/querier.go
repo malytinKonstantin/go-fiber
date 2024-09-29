@@ -9,11 +9,26 @@ import (
 )
 
 type Querier interface {
+	// Creates a new user with the provided information
+	// Returns the newly created user
 	CreateUser(ctx context.Context, arg CreateUserParams) (Users, error)
+	// Deletes a user with the specified ID
+	// This operation is irreversible
 	DeleteUser(ctx context.Context, id int32) error
+	// Retrieves a user by their ID
+	// Returns a single user or null if not found
 	GetUser(ctx context.Context, id int32) (Users, error)
+	// Retrieves a user by their username
+	// Returns a single user or null if not found
 	GetUserByUsername(ctx context.Context, username string) (Users, error)
+	// Searches for users based on various criteria
+	// Supports partial matching and date range for created_at
+	// Allows sorting by different fields in ascending or descending order
+	// Returns a paginated list of users
 	SearchUsers(ctx context.Context, arg SearchUsersParams) ([]Users, error)
+	// Updates user information for the specified user ID
+	// Only updates non-null fields, leaving others unchanged
+	// Returns the updated user information
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (Users, error)
 }
 
