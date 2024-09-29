@@ -119,8 +119,8 @@ WHERE
     AND ($2::text IS NULL OR email ILIKE '%' || $2::text || '%')
     AND ($3::text IS NULL OR full_name ILIKE '%' || $3::text || '%')
     AND ($4::text IS NULL OR bio ILIKE '%' || $4::text || '%')
-    AND ($5::timestamptz IS NULL OR created_at >= $5::timestamptz)
-    AND ($6::timestamptz IS NULL OR created_at <= $6::timestamptz)
+    AND ($5::timestamptz IS NULL OR DATE(created_at) >= $5::date)
+    AND ($6::timestamptz IS NULL OR DATE(created_at) <= $6::date)
 ORDER BY
     CASE 
         WHEN $7::text = 'username_asc' THEN username

@@ -8,13 +8,13 @@ import (
 )
 
 const (
-	ErrInvalidID          = "Invalid ID"
-	ErrUserNotFound       = "User not found"
-	ErrInvalidDTO         = "Invalid input: DTO is nil"
-	ErrInvalidDTOType     = "Internal server error: invalid DTO type"
-	ErrFailedToUpdateUser = "Failed to update user"
-	ErrFailedToDeleteUser = "Failed to delete user"
-	ErrInvalidQueryParams = "Invalid query parameters"
+	errInvalidID          = "invalid ID"
+	errUserNotFound       = "user not found"
+	errInvalidDTO         = "invalid input: DTO is nil"
+	errInvalidDTOType     = "internal server error: invalid DTO type"
+	errFailedToUpdateUser = "failed to update user"
+	errFailedToDeleteUser = "failed to delete user"
+	errInvalidQueryParams = "invalid query parameters"
 )
 
 type UserController struct {
@@ -32,11 +32,11 @@ func sendErrorResponse(ctx *fiber.Ctx, status int, message string) error {
 func getDTO[T any](ctx *fiber.Ctx) (*T, error) {
 	dtoInterface := ctx.Locals("dto")
 	if dtoInterface == nil {
-		return nil, errors.New(ErrInvalidDTO)
+		return nil, errors.New(errInvalidDTO)
 	}
 	dto, ok := dtoInterface.(*T)
 	if !ok {
-		return nil, errors.New(ErrInvalidDTOType)
+		return nil, errors.New(errInvalidDTOType)
 	}
 	return dto, nil
 }
@@ -72,12 +72,12 @@ func (c *UserController) SetupRoutes(router fiber.Router) {
 func (c *UserController) GetUser(ctx *fiber.Ctx) error {
 	id, err := ctx.ParamsInt("id")
 	if err != nil {
-		return sendErrorResponse(ctx, fiber.StatusBadRequest, ErrInvalidID)
+		return sendErrorResponse(ctx, fiber.StatusBadRequest, errInvalidID)
 	}
 
 	user, err := c.service.GetUser(ctx.Context(), int32(id))
 	if err != nil {
-		return sendErrorResponse(ctx, fiber.StatusNotFound, ErrUserNotFound)
+		return sendErrorResponse(ctx, fiber.StatusNotFound, errUserNotFound)
 	}
 
 	return ctx.JSON(user)
@@ -94,7 +94,7 @@ func (c *UserController) GetUserByUsername(ctx *fiber.Ctx) error {
 	username := ctx.Params("username")
 	user, err := c.service.GetUserByUsername(ctx.Context(), username)
 	if err != nil {
-		return sendErrorResponse(ctx, fiber.StatusNotFound, ErrUserNotFound)
+		return sendErrorResponse(ctx, fiber.StatusNotFound, errUserNotFound)
 	}
 
 	return ctx.JSON(user)
@@ -118,7 +118,7 @@ func (c *UserController) GetUserByUsername(ctx *fiber.Ctx) error {
 func (c *UserController) ListUsers(ctx *fiber.Ctx) error {
 	query := new(ListUsersQuery)
 	if err := ctx.QueryParser(query); err != nil {
-		return sendErrorResponse(ctx, fiber.StatusBadRequest, ErrInvalidQueryParams)
+		return sendErrorResponse(ctx, fiber.StatusBadRequest, errInvalidQueryParams)
 	}
 
 	params := SearchUsersParams{
@@ -180,7 +180,7 @@ func (c *UserController) CreateUser(ctx *fiber.Ctx) error {
 func (c *UserController) UpdateUser(ctx *fiber.Ctx) error {
 	id, err := ctx.ParamsInt("id")
 	if err != nil {
-		return sendErrorResponse(ctx, fiber.StatusBadRequest, ErrInvalidID)
+		return sendErrorResponse(ctx, fiber.StatusBadRequest, errInvalidID)
 	}
 
 	dto, err := getDTO[UpdateUserDto](ctx)
@@ -190,7 +190,7 @@ func (c *UserController) UpdateUser(ctx *fiber.Ctx) error {
 
 	user, err := c.service.UpdateUser(ctx.Context(), int32(id), *dto)
 	if err != nil {
-		return sendErrorResponse(ctx, fiber.StatusInternalServerError, ErrFailedToUpdateUser)
+		return sendErrorResponse(ctx, fiber.StatusInternalServerError, errFailedToUpdateUser)
 	}
 
 	return ctx.JSON(user)
@@ -206,11 +206,11 @@ func (c *UserController) UpdateUser(ctx *fiber.Ctx) error {
 func (c *UserController) DeleteUser(ctx *fiber.Ctx) error {
 	id, err := ctx.ParamsInt("id")
 	if err != nil {
-		return sendErrorResponse(ctx, fiber.StatusBadRequest, ErrInvalidID)
+		return sendErrorResponse(ctx, fiber.StatusBadRequest, errInvalidID)
 	}
 
 	if err := c.service.DeleteUser(ctx.Context(), int32(id)); err != nil {
-		return sendErrorResponse(ctx, fiber.StatusInternalServerError, ErrFailedToDeleteUser)
+		return sendErrorResponse(ctx, fiber.StatusInternalServerError, errFailedToDeleteUser)
 	}
 
 	return ctx.SendStatus(fiber.StatusNoContent)
