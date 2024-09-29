@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/malytinKonstantin/go-fiber/internal/auth"
@@ -42,7 +41,7 @@ func (s *UserService) SearchUsers(ctx context.Context, params SearchUsersParams)
 	if params.CreatedFrom != "" {
 		createdFrom, err := time.Parse("2006-01-02", params.CreatedFrom)
 		if err != nil {
-			return nil, fmt.Errorf("неверный формат даты CreatedFrom: %w", err)
+			return nil, errors.New("invalid CreatedFrom date format")
 		}
 		createdFromPtr := &createdFrom
 		dbParams.CreatedFrom = &createdFromPtr
@@ -51,7 +50,7 @@ func (s *UserService) SearchUsers(ctx context.Context, params SearchUsersParams)
 	if params.CreatedTo != "" {
 		createdTo, err := time.Parse("2006-01-02", params.CreatedTo)
 		if err != nil {
-			return nil, fmt.Errorf("неверный формат даты CreatedTo: %w", err)
+			return nil, errors.New("invalid CreatedTo date format")
 		}
 		createdToPtr := &createdTo
 		dbParams.CreatedTo = &createdToPtr

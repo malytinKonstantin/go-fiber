@@ -1,8 +1,8 @@
 package middleware
 
 import (
-	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -16,6 +16,7 @@ func init() {
 	validate.RegisterCustomTypeFunc(validateNullString, shared.NullString{})
 }
 
+// Function to validate custom NullString type
 func validateNullString(field reflect.Value) interface{} {
 	if nullString, ok := field.Interface().(shared.NullString); ok {
 		if nullString.Valid {
@@ -27,6 +28,7 @@ func validateNullString(field reflect.Value) interface{} {
 
 var DTORegistry = make(map[string]map[string]interface{})
 
+// Register DTO for routes and methods
 func RegisterDTO(path, method string, dtoType interface{}) {
 	if _, ok := DTORegistry[path]; !ok {
 		DTORegistry[path] = make(map[string]interface{})
@@ -34,52 +36,105 @@ func RegisterDTO(path, method string, dtoType interface{}) {
 	DTORegistry[path][method] = reflect.TypeOf(dtoType)
 }
 
+// Middleware for DTO validation
 func ValidateDTO() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		fullPath := c.Path()
 		method := c.Method()
 
-		dtoType, ok := DTORegistry[fullPath][method]
-		if !ok {
+		// Remove "/api/v1" prefix from the path
+		trimmedPath := strings.TrimPrefix(fullPath, "/api/v1")
+
+		// Find corresponding DTO
+		dtoType, found := findDTO(trimmedPath, method)
+		if !found {
 			return c.Next()
 		}
 
-		dtoValue := reflect.New(dtoType.(reflect.Type)).Interface()
+		// Create a new instance of DTO
+		dtoValue := reflect.New(dtoType).Interface()
 
-		if err := c.BodyParser(dtoValue); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error": "Invalid data format: " + err.Error(),
-			})
-		}
-
-		if err := validate.Struct(dtoValue); err != nil {
-			var errors []string
-			for _, err := range err.(validator.ValidationErrors) {
-				switch err.Field() {
-				case "Password":
-					errors = append(errors, getPasswordErrorMessage(err))
-				default:
-					errors = append(errors, fmt.Sprintf("Field '%s': %s", err.Field(), getErrorMessage(err)))
-				}
+		// Parse parameters for GET/DELETE requests and request body for other methods
+		if method == "GET" || method == "DELETE" {
+			if err := c.QueryParser(dtoValue); err != nil {
+				return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+					"error": "Invalid query parameters: " + err.Error(),
+				})
 			}
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"errors": errors,
-			})
+		} else {
+			if err := c.BodyParser(dtoValue); err != nil {
+				return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+					"error": "Invalid data format: " + err.Error(),
+				})
+			}
 		}
 
+		// Check DTO for validation errors
+		if err := validate.Struct(dtoValue); err != nil {
+			return handleValidationError(c, err.(validator.ValidationErrors))
+		}
+
+		// Save DTO in context for further use
 		c.Locals("dto", dtoValue)
 		return c.Next()
 	}
 }
 
+// Find DTO for specified route and method
+func findDTO(fullPath, method string) (reflect.Type, bool) {
+	for registeredPath, methodMap := range DTORegistry {
+		if matchPath(fullPath, registeredPath) {
+			if dtoType, ok := methodMap[method]; ok {
+				return dtoType.(reflect.Type), true
+			}
+		}
+	}
+	return nil, false
+}
+
+// Function to match paths considering parameters
+func matchPath(actualPath, registeredPath string) bool {
+	actualParts := strings.Split(actualPath, "/")
+	registeredParts := strings.Split(registeredPath, "/")
+
+	if len(actualParts) != len(registeredParts) {
+		return false
+	}
+
+	for i := range actualParts {
+		if registeredParts[i] != actualParts[i] && !strings.HasPrefix(registeredParts[i], ":") {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Handle validation errors
+func handleValidationError(c *fiber.Ctx, errors validator.ValidationErrors) error {
+	var errorMessages []string
+	for _, err := range errors {
+		switch err.Field() {
+		case "Password":
+			errorMessages = append(errorMessages, getPasswordErrorMessage(err))
+		default:
+			errorMessages = append(errorMessages, getErrorMessage(err))
+		}
+	}
+	return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+		"errors": errorMessages,
+	})
+}
+
+// Returns error message for Password field
 func getPasswordErrorMessage(err validator.FieldError) string {
 	switch err.Tag() {
 	case "required":
 		return "Password is required"
 	case "min":
-		return fmt.Sprintf("Password must contain at least %s characters", err.Param())
+		return "Password must contain at least " + err.Param() + " characters"
 	case "max":
-		return fmt.Sprintf("Password must contain no more than %s characters", err.Param())
+		return "Password must contain no more than " + err.Param() + " characters"
 	case "containsany":
 		switch err.Param() {
 		case "abcdefghijklmnopqrstuvwxyz":
@@ -92,9 +147,10 @@ func getPasswordErrorMessage(err validator.FieldError) string {
 			return "Password must contain at least one special character (!@#$%^&*())"
 		}
 	}
-	return fmt.Sprintf("Password does not meet requirements: %s", err.Tag())
+	return "Password does not meet requirements: " + err.Tag()
 }
 
+// Returns general validation error message
 func getErrorMessage(err validator.FieldError) string {
 	switch err.Tag() {
 	case "required":
@@ -102,11 +158,11 @@ func getErrorMessage(err validator.FieldError) string {
 	case "email":
 		return "Invalid email address"
 	case "min":
-		return fmt.Sprintf("Minimum length: %s", err.Param())
+		return "Minimum length: " + err.Param()
 	case "max":
-		return fmt.Sprintf("Maximum length: %s", err.Param())
+		return "Maximum length: " + err.Param()
 	case "alphanum":
 		return "Only letters and numbers are allowed"
 	}
-	return fmt.Sprintf("Does not meet the rule: %s", err.Tag())
+	return "Does not meet the rule: " + err.Tag()
 }

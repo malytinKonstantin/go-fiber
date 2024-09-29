@@ -17,11 +17,6 @@ func main() {
 	dbURL := viper.GetString("DATABASE_URL")
 	port := viper.GetString("PORT")
 	apiPrefix := viper.GetString("API_PREFIX")
-	// db, err := sql.Open("postgres", dbURL)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// defer db.Close()
 
 	app, err := InitializeApp(dbURL)
 	if err != nil {
