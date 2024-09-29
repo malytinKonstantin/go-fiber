@@ -100,36 +100,15 @@ func (c *UserController) ListUsers(ctx *fiber.Ctx) error {
 	}
 
 	params := SearchUsersParams{
-		Limit:  100,
-		Offset: 0,
-	}
-
-	if query.Username != "" {
-		params.Username = query.Username
-	}
-
-	if query.Email != "" {
-		params.Email = query.Email
-	}
-
-	if query.FullName != "" {
-		params.FullName = query.FullName
-	}
-
-	if query.Bio != "" {
-		params.Bio = query.Bio
-	}
-
-	if query.CreatedFrom != "" {
-		params.CreatedFrom = query.CreatedFrom
-	}
-
-	if query.CreatedTo != "" {
-		params.CreatedTo = query.CreatedTo
-	}
-
-	if query.SortBy != "" {
-		params.SortBy = query.SortBy
+		Username:    query.Username,
+		Email:       query.Email,
+		FullName:    query.FullName,
+		Bio:         query.Bio,
+		CreatedFrom: query.CreatedFrom,
+		CreatedTo:   query.CreatedTo,
+		SortBy:      query.SortBy,
+		Limit:       100,
+		Offset:      0,
 	}
 
 	if query.Limit > 0 {
