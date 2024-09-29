@@ -11,6 +11,12 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const (
+	dateFormat            = "2006-01-02"
+	invalidDateFormatErr  = "invalid date format"
+	invalidCredentialsErr = "invalid credentials"
+)
+
 type UserService struct {
 	repo *UserRepository
 }
@@ -20,14 +26,24 @@ func NewUserService(repo *UserRepository) *UserService {
 }
 
 func (s *UserService) GetUser(ctx context.Context, id int32) (User, error) {
+	if err := ctx.Err(); err != nil {
+		return User{}, err
+	}
 	return s.repo.GetUser(ctx, id)
 }
 
 func (s *UserService) GetUserByUsername(ctx context.Context, username string) (User, error) {
+	if err := ctx.Err(); err != nil {
+		return User{}, err
+	}
 	return s.repo.GetUserByUsername(ctx, username)
 }
 
 func (s *UserService) SearchUsers(ctx context.Context, params SearchUsersParams) ([]User, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
 	dbParams := db.SearchUsersParams{
 		Username:    params.Username,
 		Email:       params.Email,
@@ -38,28 +54,42 @@ func (s *UserService) SearchUsers(ctx context.Context, params SearchUsersParams)
 		OffsetParam: sql.NullInt32{Int32: params.Offset, Valid: params.Offset >= 0},
 	}
 
-	if params.CreatedFrom != "" {
-		createdFrom, err := time.Parse("2006-01-02", params.CreatedFrom)
-		if err != nil {
-			return nil, errors.New("invalid CreatedFrom date format")
+	if params.CreatedFrom != "" || params.CreatedTo != "" {
+		if err := s.parseAndSetDates(&dbParams, params.CreatedFrom, params.CreatedTo); err != nil {
+			return nil, err
 		}
-		createdFromPtr := &createdFrom
-		dbParams.CreatedFrom = &createdFromPtr
-	}
-
-	if params.CreatedTo != "" {
-		createdTo, err := time.Parse("2006-01-02", params.CreatedTo)
-		if err != nil {
-			return nil, errors.New("invalid CreatedTo date format")
-		}
-		createdToPtr := &createdTo
-		dbParams.CreatedTo = &createdToPtr
 	}
 
 	return s.repo.SearchUsers(ctx, dbParams)
 }
 
+func (s *UserService) parseAndSetDates(dbParams *db.SearchUsersParams, createdFrom, createdTo string) error {
+	if createdFrom != "" {
+		if t, err := time.Parse(dateFormat, createdFrom); err != nil {
+			return errors.New(invalidDateFormatErr)
+		} else {
+			tPtr := &t
+			dbParams.CreatedFrom = &tPtr
+		}
+	}
+
+	if createdTo != "" {
+		if t, err := time.Parse(dateFormat, createdTo); err != nil {
+			return errors.New(invalidDateFormatErr)
+		} else {
+			tPtr := &t
+			dbParams.CreatedTo = &tPtr
+		}
+	}
+
+	return nil
+}
+
 func (s *UserService) CreateUser(ctx context.Context, dto CreateUserDto) (User, error) {
+	if err := ctx.Err(); err != nil {
+		return User{}, err
+	}
+
 	hashedPassword, err := HashPassword(dto.Password)
 	if err != nil {
 		return User{}, err
@@ -75,10 +105,20 @@ func (s *UserService) CreateUser(ctx context.Context, dto CreateUserDto) (User, 
 }
 
 func (s *UserService) UpdateUser(ctx context.Context, id int32, dto UpdateUserDto) (User, error) {
-	dbParams := db.UpdateUserParams{
-		ID: id,
+	if err := ctx.Err(); err != nil {
+		return User{}, err
 	}
 
+	dbParams := db.UpdateUserParams{ID: id}
+
+	if err := s.setUpdateParams(&dbParams, dto); err != nil {
+		return User{}, err
+	}
+
+	return s.repo.UpdateUser(ctx, dbParams)
+}
+
+func (s *UserService) setUpdateParams(dbParams *db.UpdateUserParams, dto UpdateUserDto) error {
 	if dto.Username.Valid {
 		dbParams.Username = dto.Username.String
 	}
@@ -88,7 +128,7 @@ func (s *UserService) UpdateUser(ctx context.Context, id int32, dto UpdateUserDt
 	if dto.Password.Valid {
 		hashedPassword, err := HashPassword(dto.Password.String)
 		if err != nil {
-			return User{}, err
+			return err
 		}
 		dbParams.PasswordHash = hashedPassword
 	}
@@ -98,11 +138,13 @@ func (s *UserService) UpdateUser(ctx context.Context, id int32, dto UpdateUserDt
 	if dto.Bio.Valid {
 		dbParams.Bio = sql.NullString{String: dto.Bio.String, Valid: true}
 	}
-
-	return s.repo.UpdateUser(ctx, dbParams)
+	return nil
 }
 
 func (s *UserService) DeleteUser(ctx context.Context, id int32) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	return s.repo.DeleteUser(ctx, id)
 }
 
@@ -117,21 +159,23 @@ func CheckPasswordHash(password, hash string) bool {
 }
 
 func (s *UserService) Authenticate(ctx context.Context, username, password string) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+
 	user, err := s.repo.GetUserByUsername(ctx, username)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", errors.New(invalidCredentialsErr)
+		}
 		return "", err
 	}
 
 	if !CheckPasswordHash(password, user.PasswordHash) {
-		return "", errors.New("invalid credentials")
+		return "", errors.New(invalidCredentialsErr)
 	}
 
-	token, err := auth.GenerateToken(auth.User{ID: user.ID})
-	if err != nil {
-		return "", err
-	}
-
-	return token, nil
+	return auth.GenerateToken(auth.User{ID: user.ID})
 }
 
 func (s *UserService) ValidateToken(tokenString string) (*auth.Claims, error) {

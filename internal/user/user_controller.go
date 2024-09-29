@@ -1,14 +1,21 @@
 package user
 
 import (
-	"strconv"
+	"errors"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/malytinKonstantin/go-fiber/internal/middleware"
 )
 
-// swagger:model FiberMap
-type FiberMap map[string]interface{}
+const (
+	ErrInvalidID          = "Invalid ID"
+	ErrUserNotFound       = "User not found"
+	ErrInvalidDTO         = "Invalid input: DTO is nil"
+	ErrInvalidDTOType     = "Internal server error: invalid DTO type"
+	ErrFailedToUpdateUser = "Failed to update user"
+	ErrFailedToDeleteUser = "Failed to delete user"
+	ErrInvalidQueryParams = "Invalid query parameters"
+)
 
 type UserController struct {
 	service *UserService
@@ -16,6 +23,22 @@ type UserController struct {
 
 func NewUserController(service *UserService) *UserController {
 	return &UserController{service: service}
+}
+
+func sendErrorResponse(ctx *fiber.Ctx, status int, message string) error {
+	return ctx.Status(status).JSON(fiber.Map{"error": message})
+}
+
+func getDTO[T any](ctx *fiber.Ctx) (*T, error) {
+	dtoInterface := ctx.Locals("dto")
+	if dtoInterface == nil {
+		return nil, errors.New(ErrInvalidDTO)
+	}
+	dto, ok := dtoInterface.(*T)
+	if !ok {
+		return nil, errors.New(ErrInvalidDTOType)
+	}
+	return dto, nil
 }
 
 // SetupRoutes sets up the user-related routes
@@ -47,14 +70,14 @@ func (c *UserController) SetupRoutes(router fiber.Router) {
 // @Failure 400,404 {object} ErrorResponse
 // @Router /api/v1/users/{id} [get]
 func (c *UserController) GetUser(ctx *fiber.Ctx) error {
-	id, err := strconv.ParseInt(ctx.Params("id"), 10, 32)
+	id, err := ctx.ParamsInt("id")
 	if err != nil {
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid ID"})
+		return sendErrorResponse(ctx, fiber.StatusBadRequest, ErrInvalidID)
 	}
 
 	user, err := c.service.GetUser(ctx.Context(), int32(id))
 	if err != nil {
-		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "User not found"})
+		return sendErrorResponse(ctx, fiber.StatusNotFound, ErrUserNotFound)
 	}
 
 	return ctx.JSON(user)
@@ -71,7 +94,7 @@ func (c *UserController) GetUserByUsername(ctx *fiber.Ctx) error {
 	username := ctx.Params("username")
 	user, err := c.service.GetUserByUsername(ctx.Context(), username)
 	if err != nil {
-		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "User not found"})
+		return sendErrorResponse(ctx, fiber.StatusNotFound, ErrUserNotFound)
 	}
 
 	return ctx.JSON(user)
@@ -94,9 +117,8 @@ func (c *UserController) GetUserByUsername(ctx *fiber.Ctx) error {
 // @Router /api/v1/users [get]
 func (c *UserController) ListUsers(ctx *fiber.Ctx) error {
 	query := new(ListUsersQuery)
-
 	if err := ctx.QueryParser(query); err != nil {
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid query parameters"})
+		return sendErrorResponse(ctx, fiber.StatusBadRequest, ErrInvalidQueryParams)
 	}
 
 	params := SearchUsersParams{
@@ -107,21 +129,20 @@ func (c *UserController) ListUsers(ctx *fiber.Ctx) error {
 		CreatedFrom: query.CreatedFrom,
 		CreatedTo:   query.CreatedTo,
 		SortBy:      query.SortBy,
-		Limit:       100,
-		Offset:      0,
+		Limit:       query.Limit,
+		Offset:      query.Offset,
 	}
 
-	if query.Limit > 0 {
-		params.Limit = query.Limit
+	if params.Limit <= 0 {
+		params.Limit = 100
 	}
-
-	if query.Offset >= 0 {
-		params.Offset = query.Offset
+	if params.Offset < 0 {
+		params.Offset = 0
 	}
 
 	users, err := c.service.SearchUsers(ctx.Context(), params)
 	if err != nil {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return sendErrorResponse(ctx, fiber.StatusInternalServerError, err.Error())
 	}
 
 	return ctx.JSON(users)
@@ -135,19 +156,14 @@ func (c *UserController) ListUsers(ctx *fiber.Ctx) error {
 // @Failure 400,500 {object} ErrorResponse
 // @Router /api/v1/users [post]
 func (c *UserController) CreateUser(ctx *fiber.Ctx) error {
-	dtoInterface := ctx.Locals("dto")
-	if dtoInterface == nil {
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid input: DTO is nil"})
-	}
-
-	dto, ok := dtoInterface.(*CreateUserDto)
-	if !ok {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Internal server error: invalid DTO type"})
+	dto, err := getDTO[CreateUserDto](ctx)
+	if err != nil {
+		return sendErrorResponse(ctx, fiber.StatusBadRequest, err.Error())
 	}
 
 	user, err := c.service.CreateUser(ctx.Context(), *dto)
 	if err != nil {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return sendErrorResponse(ctx, fiber.StatusInternalServerError, err.Error())
 	}
 
 	return ctx.Status(fiber.StatusCreated).JSON(user)
@@ -162,25 +178,19 @@ func (c *UserController) CreateUser(ctx *fiber.Ctx) error {
 // @Failure 400,500 {object} ErrorResponse
 // @Router /api/v1/users/{id} [patch]
 func (c *UserController) UpdateUser(ctx *fiber.Ctx) error {
-	id, err := strconv.ParseInt(ctx.Params("id"), 10, 32)
+	id, err := ctx.ParamsInt("id")
 	if err != nil {
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid ID"})
+		return sendErrorResponse(ctx, fiber.StatusBadRequest, ErrInvalidID)
 	}
 
-	dtoInterface := ctx.Locals("dto")
-
-	if dtoInterface == nil {
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid input: DTO is nil"})
-	}
-
-	dto, ok := dtoInterface.(*UpdateUserDto)
-	if !ok {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Internal server error: invalid DTO type"})
+	dto, err := getDTO[UpdateUserDto](ctx)
+	if err != nil {
+		return sendErrorResponse(ctx, fiber.StatusBadRequest, err.Error())
 	}
 
 	user, err := c.service.UpdateUser(ctx.Context(), int32(id), *dto)
 	if err != nil {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update user"})
+		return sendErrorResponse(ctx, fiber.StatusInternalServerError, ErrFailedToUpdateUser)
 	}
 
 	return ctx.JSON(user)
@@ -194,13 +204,13 @@ func (c *UserController) UpdateUser(ctx *fiber.Ctx) error {
 // @Failure 400,500 {object} ErrorResponse
 // @Router /api/v1/users/{id} [delete]
 func (c *UserController) DeleteUser(ctx *fiber.Ctx) error {
-	id, err := strconv.ParseInt(ctx.Params("id"), 10, 32)
+	id, err := ctx.ParamsInt("id")
 	if err != nil {
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid ID"})
+		return sendErrorResponse(ctx, fiber.StatusBadRequest, ErrInvalidID)
 	}
 
 	if err := c.service.DeleteUser(ctx.Context(), int32(id)); err != nil {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to delete user"})
+		return sendErrorResponse(ctx, fiber.StatusInternalServerError, ErrFailedToDeleteUser)
 	}
 
 	return ctx.SendStatus(fiber.StatusNoContent)
@@ -214,19 +224,14 @@ func (c *UserController) DeleteUser(ctx *fiber.Ctx) error {
 // @Failure 400,401 {object} ErrorResponse
 // @Router /api/v1/signin [post]
 func (c *UserController) SignIn(ctx *fiber.Ctx) error {
-	dtoInterface := ctx.Locals("dto")
-	if dtoInterface == nil {
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid input: DTO is nil"})
-	}
-
-	dto, ok := dtoInterface.(*SignInDto)
-	if !ok {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Internal server error: invalid DTO type"})
+	dto, err := getDTO[SignInDto](ctx)
+	if err != nil {
+		return sendErrorResponse(ctx, fiber.StatusBadRequest, err.Error())
 	}
 
 	token, err := c.service.Authenticate(ctx.Context(), dto.Username, dto.Password)
 	if err != nil {
-		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
+		return sendErrorResponse(ctx, fiber.StatusUnauthorized, err.Error())
 	}
 
 	return ctx.JSON(SignInOutput{Token: token})
