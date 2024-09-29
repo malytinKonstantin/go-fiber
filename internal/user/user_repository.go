@@ -2,7 +2,7 @@ package user
 
 import (
 	"context"
-	"time"
+	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
@@ -47,7 +47,9 @@ func (r *UserRepository) GetUserByUsername(ctx context.Context, username string)
 }
 
 func (r *UserRepository) SearchUsers(ctx context.Context, params db.SearchUsersParams) ([]User, error) {
+	fmt.Println("params", params)
 	dbUsers, err := r.q.SearchUsers(ctx, params)
+
 	if err != nil {
 		return nil, err
 	}
@@ -75,6 +77,20 @@ func (r *UserRepository) DeleteUser(ctx context.Context, id int32) error {
 }
 
 func convertDbUserToUser(dbUser db.Users) User {
+	var createdAtStr string
+	if dbUser.CreatedAt != nil && *dbUser.CreatedAt != nil {
+		createdAtStr = (**dbUser.CreatedAt).Format("2006-01-02")
+	} else {
+		createdAtStr = ""
+	}
+
+	var updatedAtStr string
+	if dbUser.UpdatedAt.Valid {
+		updatedAtStr = dbUser.UpdatedAt.Time.Format("2006-01-02")
+	} else {
+		updatedAtStr = ""
+	}
+
 	return User{
 		ID:           dbUser.ID,
 		Username:     dbUser.Username,
@@ -82,8 +98,8 @@ func convertDbUserToUser(dbUser db.Users) User {
 		PasswordHash: dbUser.PasswordHash,
 		FullName:     dbUser.FullName.String,
 		Bio:          dbUser.Bio.String,
-		CreatedAt:    dbUser.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:    dbUser.UpdatedAt.Format(time.RFC3339),
+		CreatedAt:    createdAtStr,
+		UpdatedAt:    updatedAtStr,
 	}
 }
 

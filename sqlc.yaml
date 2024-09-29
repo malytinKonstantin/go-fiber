@@ -15,18 +15,14 @@ sql:
         emit_exported_queries: true
         emit_result_struct_pointers: false
         emit_methods_with_db_argument: false
-        emit_pointers_for_null_types: false 
+        emit_pointers_for_null_types: true 
         emit_enum_valid_method: true
         emit_all_enum_values: true
         json_tags_case_style: "snake"
         overrides:
           - db_type: "timestamptz"
-            go_type: "github.com/jackc/pgtype.Timestamp"
-            nullable: true
+            go_type: "*time.Time"
           - db_type: "timestamp"
-            go_type: "github.com/jackc/pgtype.Timestamp"
-            nullable: true
+            go_type: "*time.Time"
           - column: "users.created_at"
-            go_type: "time.Time"
-          - column: "users.updated_at"
-            go_type: "time.Time"
+            go_type: "*time.Time"

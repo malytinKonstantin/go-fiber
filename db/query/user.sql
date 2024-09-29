@@ -19,24 +19,24 @@ WHERE username = $1 LIMIT 1;
 SELECT *
 FROM users
 WHERE 
-    (@username::text IS NULL OR username ILIKE '%' || @username::text || '%')
-    AND (@email::text IS NULL OR email ILIKE '%' || @email::text || '%')
-    AND (@full_name::text IS NULL OR full_name ILIKE '%' || @full_name::text || '%')
-    AND (@bio::text IS NULL OR bio ILIKE '%' || @bio::text || '%')
-    AND (@created_from::pgtype.Timestamp IS NULL OR created_at >= @created_from::pgtype.Timestamp)
-    AND (@created_to::pgtype.Timestamp IS NULL OR created_at <= @created_to::pgtype.Timestamp)
+    (@username IS NULL OR username ILIKE '%' || @username || '%')
+    AND (@email IS NULL OR email ILIKE '%' || @email || '%')
+    AND (@full_name IS NULL OR full_name ILIKE '%' || @full_name || '%')
+    AND (@bio IS NULL OR bio ILIKE '%' || @bio || '%')
+    AND (@created_from IS NULL OR created_at >= @created_from)
+    AND (@created_to IS NULL OR created_at <= @created_to)
 ORDER BY
     CASE 
-        WHEN @sort_by::text = 'username_asc' THEN username
-        WHEN @sort_by::text = 'username_desc' THEN username
-        WHEN @sort_by::text = 'email_asc' THEN email
-        WHEN @sort_by::text = 'email_desc' THEN email
-        WHEN @sort_by::text = 'created_at_asc' THEN created_at::text
-        WHEN @sort_by::text = 'created_at_desc' THEN created_at::text
+        WHEN @sort_by = 'username_asc' THEN username
+        WHEN @sort_by = 'username_desc' THEN username
+        WHEN @sort_by = 'email_asc' THEN email
+        WHEN @sort_by = 'email_desc' THEN email
+        WHEN @sort_by = 'created_at_asc' THEN created_at::text
+        WHEN @sort_by = 'created_at_desc' THEN created_at::text
         ELSE id::text
     END
     || CASE 
-        WHEN @sort_by::text LIKE '%desc' THEN ' DESC'
+        WHEN @sort_by LIKE '%desc' THEN ' DESC'
         ELSE ' ASC'
     END
 LIMIT sqlc.narg('limit_param')::int OFFSET sqlc.narg('offset_param')::int;

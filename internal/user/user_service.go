@@ -38,13 +38,13 @@ func (s *UserService) SearchUsers(ctx context.Context, params SearchUsersParams)
 		LimitParam:  sql.NullInt32{Int32: params.Limit, Valid: true},
 		OffsetParam: sql.NullInt32{Int32: params.Offset, Valid: true},
 	}
-
+	fmt.Println("dbParams", dbParams)
 	if params.CreatedFrom != "" {
 		createdFrom, err := time.Parse("2006-01-02", params.CreatedFrom)
 		if err != nil {
 			return nil, fmt.Errorf("неверный формат даты CreatedFrom: %w", err)
 		}
-		dbParams.CreatedFrom = &createdFrom
+		dbParams.CreatedFrom = createdFrom
 	}
 
 	if params.CreatedTo != "" {
@@ -52,9 +52,8 @@ func (s *UserService) SearchUsers(ctx context.Context, params SearchUsersParams)
 		if err != nil {
 			return nil, fmt.Errorf("неверный формат даты CreatedTo: %w", err)
 		}
-		dbParams.CreatedTo = &createdTo
+		dbParams.CreatedTo = createdTo
 	}
-
 	return s.repo.SearchUsers(ctx, dbParams)
 }
 

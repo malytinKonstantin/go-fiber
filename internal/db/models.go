@@ -6,6 +6,7 @@ package db
 
 import (
 	"database/sql"
+
 	"time"
 )
 
@@ -16,6 +17,6 @@ type Users struct {
 	PasswordHash string         `json:"password_hash"`
 	FullName     sql.NullString `json:"full_name"`
 	Bio          sql.NullString `json:"bio"`
-	CreatedAt    time.Time      `json:"created_at"`
-	UpdatedAt    time.Time      `json:"updated_at"`
+	CreatedAt    **time.Time    `json:"created_at"`
+	UpdatedAt    sql.NullTime   `json:"updated_at"`
 }

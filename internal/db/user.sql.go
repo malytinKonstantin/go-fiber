@@ -105,37 +105,37 @@ const SearchUsers = `-- name: SearchUsers :many
 SELECT id, username, email, password_hash, full_name, bio, created_at, updated_at
 FROM users
 WHERE 
-    ($1::text IS NULL OR username ILIKE '%' || $1::text || '%')
-    AND ($2::text IS NULL OR email ILIKE '%' || $2::text || '%')
-    AND ($3::text IS NULL OR full_name ILIKE '%' || $3::text || '%')
-    AND ($4::text IS NULL OR bio ILIKE '%' || $4::text || '%')
-    AND ($5::pgtype.Timestamp IS NULL OR created_at >= $5::pgtype.Timestamp)
-    AND ($6::pgtype.Timestamp IS NULL OR created_at <= $6::pgtype.Timestamp)
+    ($1 IS NULL OR username ILIKE '%' || $1 || '%')
+    AND ($2 IS NULL OR email ILIKE '%' || $2 || '%')
+    AND ($3 IS NULL OR full_name ILIKE '%' || $3 || '%')
+    AND ($4 IS NULL OR bio ILIKE '%' || $4 || '%')
+    AND ($5 IS NULL OR created_at >= $5)
+    AND ($6 IS NULL OR created_at <= $6)
 ORDER BY
     CASE 
-        WHEN $7::text = 'username_asc' THEN username
-        WHEN $7::text = 'username_desc' THEN username
-        WHEN $7::text = 'email_asc' THEN email
-        WHEN $7::text = 'email_desc' THEN email
-        WHEN $7::text = 'created_at_asc' THEN created_at::text
-        WHEN $7::text = 'created_at_desc' THEN created_at::text
+        WHEN $7 = 'username_asc' THEN username
+        WHEN $7 = 'username_desc' THEN username
+        WHEN $7 = 'email_asc' THEN email
+        WHEN $7 = 'email_desc' THEN email
+        WHEN $7 = 'created_at_asc' THEN created_at::text
+        WHEN $7 = 'created_at_desc' THEN created_at::text
         ELSE id::text
     END
     || CASE 
-        WHEN $7::text LIKE '%desc' THEN ' DESC'
+        WHEN $7 LIKE '%desc' THEN ' DESC'
         ELSE ' ASC'
     END
 LIMIT $9::int OFFSET $8::int
 `
 
 type SearchUsersParams struct {
-	Username    string        `json:"username"`
-	Email       string        `json:"email"`
-	FullName    string        `json:"full_name"`
-	Bio         string        `json:"bio"`
+	Username    interface{}   `json:"username"`
+	Email       interface{}   `json:"email"`
+	FullName    interface{}   `json:"full_name"`
+	Bio         interface{}   `json:"bio"`
 	CreatedFrom interface{}   `json:"created_from"`
 	CreatedTo   interface{}   `json:"created_to"`
-	SortBy      string        `json:"sort_by"`
+	SortBy      interface{}   `json:"sort_by"`
 	OffsetParam sql.NullInt32 `json:"offset_param"`
 	LimitParam  sql.NullInt32 `json:"limit_param"`
 }
