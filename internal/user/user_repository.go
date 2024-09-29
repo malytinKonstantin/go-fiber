@@ -2,9 +2,10 @@ package user
 
 import (
 	"context"
-	"database/sql"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/malytinKonstantin/go-fiber/internal/db"
 )
 
@@ -23,9 +24,9 @@ type UserRepository struct {
 	q *db.Queries
 }
 
-func NewUserRepository(dbConn *sql.DB) *UserRepository {
+func NewUserRepository(dbConn *pgxpool.Pool) *UserRepository {
 	return &UserRepository{
-		q: db.New(dbConn),
+		q: db.New(stdlib.OpenDBFromPool(dbConn)),
 	}
 }
 

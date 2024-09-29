@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -18,13 +17,13 @@ func main() {
 	dbURL := viper.GetString("DATABASE_URL")
 	port := viper.GetString("PORT")
 	apiPrefix := viper.GetString("API_PREFIX")
-	db, err := sql.Open("postgres", dbURL)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
+	// db, err := sql.Open("postgres", dbURL)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// defer db.Close()
 
-	app, err := InitializeApp(db)
+	app, err := InitializeApp(dbURL)
 	if err != nil {
 		log.Fatalf("Failed to initialize app: %v", err)
 	}

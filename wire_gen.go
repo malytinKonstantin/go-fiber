@@ -7,8 +7,9 @@
 package main
 
 import (
-	"database/sql"
+	"github.com/google/wire"
 	"github.com/malytinKonstantin/go-fiber/internal/app"
+	"github.com/malytinKonstantin/go-fiber/internal/db"
 	"github.com/malytinKonstantin/go-fiber/internal/user"
 )
 
@@ -19,11 +20,24 @@ import (
 
 // Injectors from wire.go:
 
-func InitializeApp(db *sql.DB) (*app.App, error) {
-	userRepository := user.NewUserRepository(db)
+func InitializeApp(databaseURL string) (*app.App, error) {
+	pool, err := db.NewPostgresPool(databaseURL)
+	if err != nil {
+		return nil, err
+	}
+	userRepository := user.NewUserRepository(pool)
 	userService := user.NewUserService(userRepository)
 	userController := user.NewUserController(userService)
 	module := user.NewModule(userController)
-	appApp := app.NewApp(module, db)
+	sqlDB := db.NewSQLDB(pool)
+	appApp := app.NewApp(module, sqlDB)
 	return appApp, nil
 }
+
+// wire.go:
+
+var PostgresSet = wire.NewSet(db.NewPostgresPool, db.NewSQLDB)
+
+var AppSet = wire.NewSet(
+	PostgresSet, app.NewApp, user.NewModule, user.NewUserController, user.NewUserService, user.NewUserRepository,
+)
