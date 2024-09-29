@@ -116,18 +116,23 @@ WHERE
 ORDER BY
     CASE 
         WHEN $7::text = 'username_asc' THEN username
-        WHEN $7::text = 'username_desc' THEN username
         WHEN $7::text = 'email_asc' THEN email
+        WHEN $7::text = 'created_at_asc' THEN NULL -- We’ll handle this separately
+        WHEN $7::text = 'id_asc' THEN NULL -- We’ll handle this separately
+    END ASC,
+    CASE 
+        WHEN $7::text = 'username_desc' THEN username
         WHEN $7::text = 'email_desc' THEN email
-        WHEN $7::text = 'created_at_asc' THEN created_at::text
-        WHEN $7::text = 'created_at_desc' THEN created_at::text
-        ELSE id::text
-    END
-    || CASE 
-        WHEN $7::text LIKE '%desc' THEN ' DESC'
-        ELSE ' ASC'
-    END
-LIMIT $9::int OFFSET $8::int
+        WHEN $7::text = 'created_at_desc' THEN NULL -- We’ll handle this separately
+        WHEN $7::text = 'id_desc' THEN NULL -- We’ll handle this separately
+    END DESC,
+    CASE WHEN $7::text = 'created_at_asc' THEN created_at END ASC,
+    CASE WHEN $7::text = 'id_asc' THEN id END ASC,
+    CASE WHEN $7::text = 'created_at_desc' THEN created_at END DESC,
+    CASE WHEN $7::text = 'id_desc' THEN id END DESC,
+    id ASC -- Always fallback sort by id
+LIMIT $9::int
+OFFSET $8::int
 `
 
 type SearchUsersParams struct {

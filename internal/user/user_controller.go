@@ -1,7 +1,6 @@
 package user
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
@@ -109,8 +108,6 @@ func (c *UserController) ListUsers(ctx *fiber.Ctx) error {
 	if err := ctx.QueryParser(query); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid query parameters"})
 	}
-
-	fmt.Println("11 query", query)
 
 	params := SearchUsersParams{
 		Limit:  100,

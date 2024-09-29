@@ -28,18 +28,23 @@ WHERE
 ORDER BY
     CASE 
         WHEN @sort_by::text = 'username_asc' THEN username
-        WHEN @sort_by::text = 'username_desc' THEN username
         WHEN @sort_by::text = 'email_asc' THEN email
+        WHEN @sort_by::text = 'created_at_asc' THEN NULL -- We’ll handle this separately
+        WHEN @sort_by::text = 'id_asc' THEN NULL -- We’ll handle this separately
+    END ASC,
+    CASE 
+        WHEN @sort_by::text = 'username_desc' THEN username
         WHEN @sort_by::text = 'email_desc' THEN email
-        WHEN @sort_by::text = 'created_at_asc' THEN created_at::text
-        WHEN @sort_by::text = 'created_at_desc' THEN created_at::text
-        ELSE id::text
-    END
-    || CASE 
-        WHEN @sort_by::text LIKE '%desc' THEN ' DESC'
-        ELSE ' ASC'
-    END
-LIMIT sqlc.narg('limit_param')::int OFFSET sqlc.narg('offset_param')::int;
+        WHEN @sort_by::text = 'created_at_desc' THEN NULL -- We’ll handle this separately
+        WHEN @sort_by::text = 'id_desc' THEN NULL -- We’ll handle this separately
+    END DESC,
+    CASE WHEN @sort_by::text = 'created_at_asc' THEN created_at END ASC,
+    CASE WHEN @sort_by::text = 'id_asc' THEN id END ASC,
+    CASE WHEN @sort_by::text = 'created_at_desc' THEN created_at END DESC,
+    CASE WHEN @sort_by::text = 'id_desc' THEN id END DESC,
+    id ASC -- Always fallback sort by id
+LIMIT sqlc.narg('limit_param')::int
+OFFSET sqlc.narg('offset_param')::int;
 
 
 -- name: UpdateUser :one
