@@ -112,6 +112,7 @@ func (c *UserController) GetUserByUsername(ctx *fiber.Ctx) error {
 // @Param sort_by query string false "Sort By (e.g., username_asc, created_at_desc)"
 // @Param limit query int false "Limit" default(100)
 // @Param offset query int false "Offset" default(0)
+// @Param search query string false "Search"
 // @Success 200 {array} User
 // @Failure 400,500 {object} ErrorResponse
 // @Router /api/v1/users [get]
@@ -128,6 +129,7 @@ func (c *UserController) ListUsers(ctx *fiber.Ctx) error {
 		Bio:         query.Bio,
 		CreatedFrom: query.CreatedFrom,
 		CreatedTo:   query.CreatedTo,
+		Search:      query.Search,
 		SortBy:      query.SortBy,
 		Limit:       query.Limit,
 		Offset:      query.Offset,

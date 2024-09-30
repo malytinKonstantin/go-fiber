@@ -50,6 +50,7 @@ func (s *UserService) SearchUsers(ctx context.Context, params SearchUsersParams)
 		FullName:    params.FullName,
 		Bio:         params.Bio,
 		SortBy:      params.SortBy,
+		Search:      params.Search,
 		LimitParam:  sql.NullInt32{Int32: params.Limit, Valid: params.Limit > 0},
 		OffsetParam: sql.NullInt32{Int32: params.Offset, Valid: params.Offset >= 0},
 	}
@@ -189,6 +190,7 @@ type SearchUsersParams struct {
 	Bio         string
 	CreatedFrom string
 	CreatedTo   string
+	Search      string
 	SortBy      string
 	Limit       int32
 	Offset      int32

@@ -118,6 +118,10 @@ type ListUsersQuery struct {
 	// example: 2023-12-31
 	CreatedTo string `query:"created_to"`
 
+	// Search for filtering users by email, full name or bio
+	// example: john
+	Search string `query:"search"`
+
 	// Field for sorting
 	// example: username_asc
 	SortBy string `query:"sort_by"`

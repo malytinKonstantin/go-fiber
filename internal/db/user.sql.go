@@ -121,26 +121,31 @@ WHERE
     AND ($4::text IS NULL OR bio ILIKE '%' || $4::text || '%')
     AND ($5::timestamptz IS NULL OR DATE(created_at) >= $5::date)
     AND ($6::timestamptz IS NULL OR DATE(created_at) <= $6::date)
+    AND ($7::text IS NULL OR 
+         LOWER(email) LIKE '%' || LOWER($7::text) || '%' OR
+         LOWER(username) LIKE '%' || LOWER($7::text) || '%' OR
+         LOWER(full_name) LIKE '%' || LOWER($7::text) || '%' OR
+         LOWER(bio) LIKE '%' || LOWER($7::text) || '%')
 ORDER BY
     CASE 
-        WHEN $7::text = 'username_asc' THEN username
-        WHEN $7::text = 'email_asc' THEN email
-        WHEN $7::text = 'created_at_asc' THEN NULL
-        WHEN $7::text = 'id_asc' THEN NULL
+        WHEN $8::text = 'username_asc' THEN username
+        WHEN $8::text = 'email_asc' THEN email
+        WHEN $8::text = 'created_at_asc' THEN NULL
+        WHEN $8::text = 'id_asc' THEN NULL
     END ASC,
     CASE 
-        WHEN $7::text = 'username_desc' THEN username
-        WHEN $7::text = 'email_desc' THEN email
-        WHEN $7::text = 'created_at_desc' THEN NULL
-        WHEN $7::text = 'id_desc' THEN NULL
+        WHEN $8::text = 'username_desc' THEN username
+        WHEN $8::text = 'email_desc' THEN email
+        WHEN $8::text = 'created_at_desc' THEN NULL
+        WHEN $8::text = 'id_desc' THEN NULL
     END DESC,
-    CASE WHEN $7::text = 'created_at_asc' THEN created_at END ASC,
-    CASE WHEN $7::text = 'id_asc' THEN id END ASC,
-    CASE WHEN $7::text = 'created_at_desc' THEN created_at END DESC,
-    CASE WHEN $7::text = 'id_desc' THEN id END DESC,
+    CASE WHEN $8::text = 'created_at_asc' THEN created_at END ASC,
+    CASE WHEN $8::text = 'id_asc' THEN id END ASC,
+    CASE WHEN $8::text = 'created_at_desc' THEN created_at END DESC,
+    CASE WHEN $8::text = 'id_desc' THEN id END DESC,
     id ASC -- Always fallback sort by id
-LIMIT $9::int
-OFFSET $8::int
+LIMIT $10::int
+OFFSET $9::int
 `
 
 type SearchUsersParams struct {
@@ -150,6 +155,7 @@ type SearchUsersParams struct {
 	Bio         string        `json:"bio"`
 	CreatedFrom **time.Time   `json:"created_from"`
 	CreatedTo   **time.Time   `json:"created_to"`
+	Search      string        `json:"search"`
 	SortBy      string        `json:"sort_by"`
 	OffsetParam sql.NullInt32 `json:"offset_param"`
 	LimitParam  sql.NullInt32 `json:"limit_param"`
@@ -167,6 +173,7 @@ func (q *Queries) SearchUsers(ctx context.Context, arg SearchUsersParams) ([]Use
 		arg.Bio,
 		arg.CreatedFrom,
 		arg.CreatedTo,
+		arg.Search,
 		arg.SortBy,
 		arg.OffsetParam,
 		arg.LimitParam,

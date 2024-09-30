@@ -34,6 +34,11 @@ WHERE
     AND (@bio::text IS NULL OR bio ILIKE '%' || @bio::text || '%')
     AND (@created_from::timestamptz IS NULL OR DATE(created_at) >= @created_from::date)
     AND (@created_to::timestamptz IS NULL OR DATE(created_at) <= @created_to::date)
+    AND (@search::text IS NULL OR 
+         LOWER(email) LIKE '%' || LOWER(@search::text) || '%' OR
+         LOWER(username) LIKE '%' || LOWER(@search::text) || '%' OR
+         LOWER(full_name) LIKE '%' || LOWER(@search::text) || '%' OR
+         LOWER(bio) LIKE '%' || LOWER(@search::text) || '%')
 ORDER BY
     CASE 
         WHEN @sort_by::text = 'username_asc' THEN username

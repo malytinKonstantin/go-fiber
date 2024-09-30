@@ -47,7 +47,6 @@ func (r *UserRepository) GetUserByUsername(ctx context.Context, username string)
 
 func (r *UserRepository) SearchUsers(ctx context.Context, params db.SearchUsersParams) ([]User, error) {
 	dbUsers, err := r.q.SearchUsers(ctx, params)
-
 	if err != nil {
 		return nil, err
 	}
@@ -75,18 +74,14 @@ func (r *UserRepository) DeleteUser(ctx context.Context, id int32) error {
 }
 
 func convertDbUserToUser(dbUser db.Users) User {
-	var createdAtStr string
+	var createdAtStr string = ""
 	if dbUser.CreatedAt != nil && *dbUser.CreatedAt != nil {
 		createdAtStr = (**dbUser.CreatedAt).Format("2006-01-02")
-	} else {
-		createdAtStr = ""
 	}
 
-	var updatedAtStr string
+	var updatedAtStr string = ""
 	if dbUser.UpdatedAt.Valid {
 		updatedAtStr = dbUser.UpdatedAt.Time.Format("2006-01-02")
-	} else {
-		updatedAtStr = ""
 	}
 
 	return User{
